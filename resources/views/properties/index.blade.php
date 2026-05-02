@@ -1,7 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
+<hr>
 <h2 class="ptitle">Properties</h2>
+
+<hr>
 
 <table id="propertiesTable">
     <thead class="phead">
@@ -16,6 +19,8 @@
     </thead>
     <tbody></tbody>
 </table>
+
+
 
 <script>
 fetch('/api/properties')

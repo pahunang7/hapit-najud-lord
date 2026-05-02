@@ -6,12 +6,12 @@ body {
         "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
         "Noto Color Emoji";
     font-weight: 400;
-    margin: 20px;
-    background-color: #e9eff1;
+    margin: 0px;
+    background-color: #e0d9d2;
 }
 
 nav {
-    background: #316674;
+    background: #443d37;
     display: flex;
     justify-content: center; /* centers horizontally */
     gap: 100px; /* space between links */
@@ -29,8 +29,9 @@ nav a {
     font-size: large;
 }
 
-nav a:hover {
-    color: #4794ac;
+nav a:hover,
+nav a.active {
+    color: #94867b;
     border-radius: 50%;
     text-shadow: black 0.1em 0.1em 0.2em;
 }
@@ -65,7 +66,7 @@ form {
     margin: 40px auto;
     width: 100%;
     max-width: 500px;
-    background: #d7e2e6;
+    background: #eeeae7;
     padding: 25px;
     display: flex;
     flex-direction: column;
@@ -74,17 +75,24 @@ form {
 
 button {
     font-weight: bold;
-    background: #29515e;
+    background: #443d37;
     color: white;
     border: none;
     padding: 11px;
     margin-top: 50px;
     cursor: pointer;
     margin-inline: 150px;
+    transition: 0.3s;
+    border-radius: 10px;
+    border: 1px solid #443d37;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 button:hover {
-    background-color: #4794ac;
+    color: #272320;
+    background-color: #272320;
+    transform: translateY(-5px);
+    background: #e0d9d2;
 }
 
 .createl,
@@ -101,17 +109,89 @@ button:hover {
 .ptitle {
     margin-top: 5px;
     font-size: larger;
-    color: rgb(0, 0, 0);
+    color: rgb(255, 255, 255);
     padding: 10px;
     font-size: x-large;
-    background-color: #e9eff1;
+    background-color: #443d37;
 }
 
 .lthead,
 .vhead,
 .phead {
-    background-color: #29515e;
+    background-color: #443d37;
     color: rgb(255, 255, 255);
     text-shadow: black 0.1em 0.1em 0.1em;
     border-style: groove;
+}
+
+.banner-video {
+    width: 100%;
+    height: 550px;
+    object-fit: cover;
+    margin-bottom: 20px;
+}
+
+.welcome-card {
+    font-family: Georgia, "Times New Roman", Times, serif;
+    padding: 50px;
+    text-align: left;
+    font-size: x-large;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.welcome-card p {
+    font-size: large;
+    margin-top: 20px;
+    text-align: left;
+}
+
+.dashboard-section {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin: 50px auto;
+    flex-wrap: wrap;
+}
+
+.card {
+    background: #eeeae7;
+    padding: 25px;
+    width: 250px;
+    border-radius: 10px;
+    border: 1px solid #443d37;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    transition: 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    background: #e0d9d2;
+}
+
+.card h3 {
+    margin-bottom: 10px;
+}
+
+.card a {
+    text-decoration: none;
+    color: #443d37;
+    font-weight: bold;
+}
+
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 40px;
+}
+
+.stat-box {
+    background: #443d37;
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 150px;
+    text-align: center;
 }

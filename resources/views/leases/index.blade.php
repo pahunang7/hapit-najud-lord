@@ -2,10 +2,12 @@
 
 @section('content')
 
+<hr>
 <h2 class="ltitle">Leases</h2>
+<hr>
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<hr>
+
 <table id="leasesTable">
     <thead class="lthead">
         <tr>
@@ -18,8 +20,6 @@
     </thead>
     <tbody></tbody>
 </table>
-
-<hr>
 
 
 

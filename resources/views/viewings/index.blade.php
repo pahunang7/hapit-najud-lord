@@ -3,6 +3,7 @@
 @section('content')
 <hr>
 <h2 class="vtitle">Viewings</h2>
+<hr>
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -18,7 +19,6 @@
     <tbody></tbody>
 </table>
 
-<hr>
 
 
 

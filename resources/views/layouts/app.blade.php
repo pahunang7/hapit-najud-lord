@@ -12,11 +12,23 @@
 <body>
 
 <nav>
+
     <nav>
-    <a href="/"><i class="fa-solid fa-house"></i> Home</a>
-    <a href="/properties"><i class="fa-solid fa-building"></i> Properties</a>
-    <a href="/viewings"><i class="fa-solid fa-eye"></i> Viewings</a>
-    <a href="/leases"><i class="fa-solid fa-file-contract"></i> Leases</a>
+    <a href="/" class="{{ request()->is('/') ? 'active' : '' }}">
+        <i class="fa-solid fa-house"></i> Home
+    </a>
+
+    <a href="/properties" class="{{ request()->is('properties') ? 'active' : '' }}">
+        <i class="fa-solid fa-building"></i> Properties
+    </a>
+
+    <a href="/viewings" class="{{ request()->is('viewings') ? 'active' : '' }}">
+        <i class="fa-solid fa-eye"></i> Viewings
+    </a>
+
+    <a href="/leases" class="{{ request()->is('leases') ? 'active' : '' }}">
+        <i class="fa-solid fa-file-contract"></i> Leases
+    </a>
 </nav>
 </nav>
 
