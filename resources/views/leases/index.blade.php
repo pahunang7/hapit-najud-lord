@@ -1,12 +1,13 @@
 @extends('layouts.app')
 
 @section('content')
-<h2>Leases</h2>
+
+<h2 class="ltitle">Leases</h2>
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
-
+<hr>
 <table id="leasesTable">
-    <thead>
+    <thead class="lthead">
         <tr>
             <th>Lease No</th>
             <th>Property</th>
@@ -18,9 +19,12 @@
     <tbody></tbody>
 </table>
 
-<h3>Create Lease</h3>
+<hr>
+
+
 
 <form id="leaseForm">
+    <h3 class="createl">Create Lease</h3>
     <input type="number" placeholder="Lease No" id="lease_no" required>
     <input type="date" id="start_date" required>
     <input type="date" id="end_date" required>
@@ -61,11 +65,14 @@ loadLeases();
 document.getElementById('leaseForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
-    fetch('/api/leases', {
+    document.getElementById('leaseForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // ✅ keep this
+
+    fetch('/api/leases', {   // 🔁 replace ONLY this block
         method: 'POST',
         headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
         body: JSON.stringify({
             lease_no: document.getElementById('lease_no').value,
@@ -80,11 +87,22 @@ document.getElementById('leaseForm').addEventListener('submit', function(e) {
             staff_no: document.getElementById('staff_no').value
         })
     })
-    .then(res => res.json())
+    .then(async res => {
+        if (!res.ok) {
+            let error = await res.text();
+            throw new Error(error);
+        }
+        return res.json();
+    })
     .then(() => {
-        alert('Lease created!');
+        alert('✅ Lease created!');
         loadLeases();
+    })
+    .catch(err => {
+        console.error(err);
+        alert('❌ ERROR:\n' + err.message);
     });
+});
 });
 </script>
 @endsection

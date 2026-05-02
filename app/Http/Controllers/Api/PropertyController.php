@@ -15,6 +15,7 @@ class PropertyController extends Controller
             ->join('owner as o',        'o.owner_no',   '=', 'p.owner_no')
             ->join('branch_office as b', 'b.branch_no',  '=', 'p.branch_no')
             ->join('staff as s',         's.staff_no',   '=', 'p.staff_no')
+            
             ->select(
                 'p.property_no',
                 DB::raw("p.street || ', ' || p.area || ', ' || p.city || ' ' || p.postcode AS full_address"),

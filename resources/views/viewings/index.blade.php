@@ -1,12 +1,13 @@
 @extends('layouts.app')
 
 @section('content')
-<h2>Viewings</h2>
+<hr>
+<h2 class="vtitle">Viewings</h2>
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
 <table id="viewingsTable">
-    <thead>
+    <thead class="vhead">
         <tr>
             <th>Property</th>
             <th>Renter</th>
@@ -17,9 +18,12 @@
     <tbody></tbody>
 </table>
 
-<h3>Record Viewing</h3>
+<hr>
+
+
 
 <form id="viewingForm">
+    <h3 class="createv">Record Viewing</h3>
     <input type="number" placeholder="Property No" id="property_no" required>
     <input type="number" placeholder="Renter No" id="renter_no" required>
     <input type="date" id="viewing_date" required>
@@ -32,9 +36,9 @@
 function loadViewings() {
     fetch('/api/viewings')
     .then(res => res.json())
-    .then(data => {
+    .then(res => {
         let rows = '';
-        data.forEach(v => {
+        res.data.forEach(v => {
             rows += `
             <tr>
                 <td>${v.property_no}</td>
@@ -56,8 +60,8 @@ document.getElementById('viewingForm').addEventListener('submit', function(e) {
     fetch('/api/viewings', {
         method: 'POST',
         headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
         body: JSON.stringify({
             property_no: document.getElementById('property_no').value,
@@ -66,10 +70,20 @@ document.getElementById('viewingForm').addEventListener('submit', function(e) {
             comments: document.getElementById('comments').value
         })
     })
-    .then(res => res.json())
+    .then(async res => {
+        if (!res.ok) {
+            let error = await res.text();
+            throw new Error(error);
+        }
+        return res.json();
+    })
     .then(() => {
-        alert('Viewing recorded!');
+        alert('✅ Viewing recorded!');
         loadViewings();
+    })
+    .catch(err => {
+        console.error(err);
+        alert('❌ ERROR:\n' + err.message);
     });
 });
 </script>

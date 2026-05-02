@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
-<h2>Properties</h2>
+<h2 class="ptitle">Properties</h2>
 
 <table id="propertiesTable">
-    <thead>
+    <thead class="phead">
         <tr>
             <th>ID</th>
             <th>Address</th>
