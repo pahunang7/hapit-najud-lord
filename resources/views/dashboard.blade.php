@@ -2,23 +2,26 @@
 
 @section('content')
 
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+
 <video class="banner-video" autoplay muted loop>
     <source src="{{ asset('videos/video.mp4.mp4') }}" type="video/mp4">
 </video>
 
-<hr>
+
 
 <div class="welcome-card">
     <h1>Welcome to DreamHome!</h1>
 
     <p class="welcome-text">
-    This dashboard provides an overview of our rental properties, viewings, and leases. 
-    Use the navigation links above to explore the different sections and manage your rental experience with ease.</p>
+        This dashboar contains an overview of your rental properties, viewings, and leases. <br>
+         Use the navigation links above to explore the different sections and manage your rental experience with ease.</p>
 
 
 </div>
 
 <hr>
+
 
 <div class="dashboard-section">
 
@@ -35,6 +38,8 @@
     </div>
 
 </div>
+
+
 
 <div class="stats">
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Carbon\Carbon;
 
 class LeaseController extends Controller
 {
@@ -80,7 +81,6 @@ class LeaseController extends Controller
                 'lease_no'       => 'required|integer|unique:lease_agreement,lease_no',
                 'start_date'     => 'required|date',
                 'end_date'       => 'required|date|after:start_date',
-                'duration'       => 'required|integer|min:3|max:12',
                 'deposit'        => 'required|numeric|min:0',
                 'deposit_paid'   => 'required|in:Yes,No',
                 'payment_method' => 'required|string|max:50',
@@ -90,7 +90,19 @@ class LeaseController extends Controller
             ]);
         } catch (ValidationException $e) {
             return response()->json(['errors' => $e->errors()], 422);
-        }
+        } 
+        
+          $start = Carbon::parse($validated['start_date']);
+          $end   = Carbon::parse($validated['end_date']);
+
+          $duration = $start->diffInMonths($end);
+
+          if ($duration < 3 || $duration > 12) {
+         return response()->json([
+        'error' => 'Lease must be between 3 and 12 months'
+         ], 422);
+}
+
 
         try {
             
@@ -98,7 +110,7 @@ class LeaseController extends Controller
                 $validated['lease_no'],
                 $validated['start_date'],
                 $validated['end_date'],
-                $validated['duration'],
+                $duration,
                 $validated['deposit'],
                 $validated['deposit_paid'],
                 $validated['payment_method'],
@@ -119,35 +131,49 @@ class LeaseController extends Controller
 
     
     public function update(Request $request, int $leaseNo)
-    {
-        try {
-            $validated = $request->validate([
-    'start_date'     => 'sometimes|date',
-    'end_date'       => 'sometimes|date|after:start_date',
-    'duration'       => 'sometimes|integer|min:3|max:12',
-    'deposit'        => 'sometimes|numeric|min:0',
-    'deposit_paid'   => 'sometimes|in:Yes,No',
-    'payment_method' => 'sometimes|string|max:50',
-    'property_no'    => 'sometimes|integer|exists:property_for_rent,property_no',
-    'renter_no'      => 'sometimes|integer|exists:renter,renter_no',
-    'staff_no'       => 'sometimes|integer|exists:staff,staff_no',
-            ]);
-                
-
-        } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
-        }
-
-        $updated = DB::table('lease_agreement')
-            ->where('lease_no', $leaseNo)
-            ->update(array_merge($validated, ['updated_at' => now()]));
-
-        if (!$updated) {
-            return response()->json(['error' => 'Lease not found.'], 404);
-        }
-
-        return response()->json(['message' => 'Lease updated successfully.'], 200);
+{
+    try {
+        $validated = $request->validate([
+            'start_date'     => 'sometimes|date',
+            'end_date'       => 'sometimes|date|after:start_date',
+            'deposit'        => 'sometimes|numeric|min:0',
+            'deposit_paid'   => 'sometimes|in:Yes,No',
+            'payment_method' => 'sometimes|string|max:50',
+            'property_no'    => 'sometimes|integer|exists:property_for_rent,property_no',
+            'renter_no'      => 'sometimes|integer|exists:renter,renter_no',
+            'staff_no'       => 'sometimes|integer|exists:staff,staff_no',
+        ]);
+    } catch (ValidationException $e) {
+        return response()->json(['errors' => $e->errors()], 422);
     }
+
+    $current = DB::table('lease_agreement')
+        ->where('lease_no', $leaseNo)
+        ->first();
+
+    if (!$current) {
+        return response()->json(['error' => 'Lease not found.'], 404);
+    }
+
+    $start = Carbon::parse($request->start_date ?? $current->start_date);
+    $end   = Carbon::parse($request->end_date ?? $current->end_date);
+
+    $duration = $start->diffInMonths($end);
+
+    if ($duration < 3 || $duration > 12) {
+        return response()->json([
+            'error' => 'Lease must be between 3 and 12 months'
+        ], 422);
+    }
+
+    $validated['duration'] = $duration;
+
+    DB::table('lease_agreement')
+        ->where('lease_no', $leaseNo)
+        ->update(array_merge($validated, ['updated_at' => now()]));
+
+    return response()->json(['message' => 'Lease updated successfully.'], 200);
+}
 
    
     public function destroy(int $leaseNo)
