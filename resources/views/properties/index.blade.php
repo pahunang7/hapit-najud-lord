@@ -36,7 +36,8 @@ fetch('/api/properties')
             <td>${p.property_type}</td>
             <td>${p.no_of_rooms}</td>
             <td>${p.monthly_rent}</td>
-            <td>${p.rental_status}</td>
+            <td class="status ${p.rental_status.toLowerCase()}">
+            ${p.rental_status}</td>
         </tr>`;
     });
     document.querySelector('#propertiesTable tbody').innerHTML = rows;

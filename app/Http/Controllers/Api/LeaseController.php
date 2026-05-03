@@ -122,11 +122,18 @@ class LeaseController extends Controller
     {
         try {
             $validated = $request->validate([
-                'deposit_paid'   => 'sometimes|in:Yes,No',
-                'payment_method' => 'sometimes|string|max:50',
-                'end_date'       => 'sometimes|date',
-                'duration'       => 'sometimes|integer|min:3|max:12',
+    'start_date'     => 'sometimes|date',
+    'end_date'       => 'sometimes|date|after:start_date',
+    'duration'       => 'sometimes|integer|min:3|max:12',
+    'deposit'        => 'sometimes|numeric|min:0',
+    'deposit_paid'   => 'sometimes|in:Yes,No',
+    'payment_method' => 'sometimes|string|max:50',
+    'property_no'    => 'sometimes|integer|exists:property_for_rent,property_no',
+    'renter_no'      => 'sometimes|integer|exists:renter,renter_no',
+    'staff_no'       => 'sometimes|integer|exists:staff,staff_no',
             ]);
+                
+
         } catch (ValidationException $e) {
             return response()->json(['errors' => $e->errors()], 422);
         }

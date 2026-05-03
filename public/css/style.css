@@ -79,9 +79,7 @@ button {
     color: white;
     border: none;
     padding: 11px;
-    margin-top: 50px;
     cursor: pointer;
-    margin-inline: 150px;
     transition: 0.3s;
     border-radius: 10px;
     border: 1px solid #443d37;
@@ -138,12 +136,14 @@ button:hover {
     font-size: x-large;
     padding-top: 5px;
     padding-bottom: 5px;
+    color: #312d28;
 }
 
 .welcome-card p {
     font-size: large;
     margin-top: 20px;
     text-align: left;
+    color: #443d37;
 }
 
 .dashboard-section {
@@ -194,4 +194,44 @@ button:hover {
     border-radius: 10px;
     width: 150px;
     text-align: center;
+}
+
+.status {
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    text-transform: capitalize;
+}
+
+/* Available (green) */
+.status.available {
+    background-color: #c8e6c9;
+    color: #2e7d32;
+}
+
+/* Reserved (orange) */
+.status.reserved {
+    background-color: #b2c0ff;
+    color: #3a30c5;
+}
+
+/* Rented (red) */
+.status.rented {
+    background-color: #ffcdd2;
+    color: #c62828;
+}
+
+/* FORM BUTTON (centered big button) */
+.form-btn {
+    margin-top: 20px;
+    align-self: center;
+    width: 60%;
+}
+
+/* TABLE BUTTONS (small inline buttons) */
+.table-btn {
+    padding: 5px 10px;
+    margin: 2px;
+    font-size: 12px;
+    border-radius: 5px;
 }
