@@ -97,7 +97,7 @@ document.getElementById('leaseForm').addEventListener('submit', function(e) {
         method = 'PUT';
     }
 
-    // ✅ FIX: separate data object
+    //  separate data object
     let data = {
         start_date: document.getElementById('start_date').value,
         end_date: document.getElementById('end_date').value,
@@ -110,12 +110,12 @@ document.getElementById('leaseForm').addEventListener('submit', function(e) {
         staff_no: document.getElementById('staff_no').value
     };
 
-    // ✅ only include lease_no if creating
+    // only include lease_no if creating
     if (!id) {
         data.lease_no = document.getElementById('lease_no').value;
     }
 
-    // ✅ FIX OPTION 1: require fields when creating
+    //  require fields when creating
 if (!id) {
     if (
         !document.getElementById('lease_no').value ||
@@ -129,7 +129,7 @@ if (!id) {
     }
 }
 
-// ✅ FIX OPTION 2: prevent empty update
+// prevent empty update
 if (id && originalLease) {
     let changed = (
         data.start_date !== originalLease.start_date ||
@@ -164,7 +164,7 @@ if (id && originalLease) {
         document.getElementById('leaseForm').reset();
         document.getElementById('editing_id').value = '';
 
-        // ✅ re-enable lease_no after editing
+        // re-enable lease_no after editing
         document.getElementById('lease_no').disabled = false;
 
         document.querySelector('#leaseForm button[type="submit"]').textContent = "Update Lease";
@@ -200,7 +200,7 @@ function editLease(id) {
     .then(res => {
         let l = res.data;
 
-        originalLease = { ...l }; // ✅ store original
+        originalLease = { ...l }; // store original
 
         document.getElementById('editing_id').value = id;
 
@@ -216,7 +216,7 @@ function editLease(id) {
         document.getElementById('staff_no').value = l.staff_no;
         document.getElementById('cancelBtn').style.display = 'inline-block';
 
-        // ✅ FIX: only disable (no undo)
+        // only disable (no undo)
         document.getElementById('lease_no').disabled = true;
 
         document.querySelector('#leaseForm button').textContent = "Update Lease";

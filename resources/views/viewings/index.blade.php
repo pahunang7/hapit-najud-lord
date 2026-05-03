@@ -29,6 +29,9 @@
     <input type="date" id="viewing_date" required>
     <input type="text" placeholder="Comments" id="comments">
     <button type="submit">Submit</button>
+    <button type="button" id="cancelBtn" onclick="cancelViewing()" style="display:none;">
+    Cancel
+</button>
 </form>
 
 <script>
@@ -52,6 +55,19 @@ function loadViewings() {
 }
 
 loadViewings();
+
+const inputs = document.querySelectorAll('#viewingForm input');
+inputs.forEach(input => {
+    input.addEventListener('input', () => {
+        let hasValue = Array.from(inputs).some(i => i.value !== '');
+        document.getElementById('cancelBtn').style.display = hasValue ? 'inline-block' : 'none';
+    });
+});
+
+function cancelViewing() {
+    document.getElementById('viewingForm').reset();
+    document.getElementById('cancelBtn').style.display = 'none';
+}
 
 // SUBMIT FORM
 document.getElementById('viewingForm').addEventListener('submit', function(e) {
@@ -80,11 +96,17 @@ document.getElementById('viewingForm').addEventListener('submit', function(e) {
     .then(() => {
         alert('Viewing recorded!');
         loadViewings();
+
+        document.getElementById('viewingForm').reset();
+        document.getElementById('cancelBtn').style.display = 'none';
+
     })
     .catch(err => {
         console.error(err);
         alert('ERROR:\n' + err.message);
     });
+
+
 });
 </script>
 @endsection

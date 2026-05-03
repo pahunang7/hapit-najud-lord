@@ -24,7 +24,7 @@ return new class extends Migration {
             $table->string('property_type', 50);
             $table->integer('no_of_rooms')->nullable();
             $table->decimal('monthly_rent', 10, 2);
-            // Rental status for Module 4 (Track rental status)
+            //  Module 4 (Track rental status)
             $table->string('rental_status', 20)->default('available'); // available, reserved, rented
             $table->integer('owner_no');
             $table->integer('branch_no');
