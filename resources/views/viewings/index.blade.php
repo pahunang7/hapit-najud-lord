@@ -43,8 +43,8 @@ function loadViewings() {
         res.data.forEach(v => {
             rows += `
             <tr>
-                <td>${v.property_no}</td>
-                <td>${v.renter_no}</td>
+                <td>${v.property_no} - ${v.property_address} </td>
+                <td>${v.renter_no} - ${v.renter_name}</td>
                 <td>${v.viewing_date}</td>
                 <td>${v.comments}</td>
             </tr>`;
@@ -69,43 +69,69 @@ function cancelViewing() {
 }
 
 // SUBMIT FORM
-document.getElementById('viewingForm').addEventListener('submit', function(e) {
+document.getElementById('viewingForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
-    fetch('/api/viewings', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({
-            property_no: document.getElementById('property_no').value,
-            renter_no: document.getElementById('renter_no').value,
-            viewing_date: document.getElementById('viewing_date').value,
-            comments: document.getElementById('comments').value
-        })
-    })
-    .then(async res => {
-        if (!res.ok) {
-            let error = await res.text();
-            throw new Error(error);
-        }
-        return res.json();
-    })
-    .then(() => {
-        alert('Viewing recorded!');
-        loadViewings();
+    const data = {
+        property_no: document.getElementById('property_no').value,
+        renter_no: document.getElementById('renter_no').value,
+        viewing_date: document.getElementById('viewing_date').value,
+        comments: document.getElementById('comments').value
+    };
 
+    try {
+        const res = await fetch('/api/viewings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify(data)
+        });
+
+        const response = await res.json(); // ✅ ALWAYS parse JSON
+
+        if (!res.ok) {
+            showMessage(response.message || "Something went wrong", "error"); // ✅ clean
+            return;
+        }
+
+        showMessage(response.message, "success"); // ✅ clean success
+
+        loadViewings();
         document.getElementById('viewingForm').reset();
         document.getElementById('cancelBtn').style.display = 'none';
 
-    })
-    .catch(err => {
+    } catch (err) {
         console.error(err);
-        alert('ERROR:\n' + err.message);
-    });
-
-
+        showMessage("Unexpected error occurred", "error");
+    }
 });
+
+</script>
+
+<script>
+function showMessage(message, type = "success") {
+    const box = document.createElement("div");
+
+    box.innerText = message;
+
+    box.style.position = "fixed";
+    box.style.top = "20px";
+    box.style.right = "20px";
+    box.style.padding = "12px 20px";
+    box.style.color = "#fff";
+    box.style.borderRadius = "6px";
+    box.style.zIndex = "9999";
+    box.style.fontWeight = "bold";
+    box.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
+    box.style.transition = "0.3s";
+
+    box.style.backgroundColor = (type === "error") ? "#e74c3c" : "#2ecc71";
+
+    document.body.appendChild(box);
+
+    setTimeout(() => box.remove(), 3000);
+}
 </script>
 @endsection
