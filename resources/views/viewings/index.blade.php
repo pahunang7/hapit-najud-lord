@@ -78,12 +78,12 @@ document.getElementById('viewingForm').addEventListener('submit', function(e) {
         return res.json();
     })
     .then(() => {
-        alert('✅ Viewing recorded!');
+        alert('Viewing recorded!');
         loadViewings();
     })
     .catch(err => {
         console.error(err);
-        alert('❌ ERROR:\n' + err.message);
+        alert('ERROR:\n' + err.message);
     });
 });
 </script>
