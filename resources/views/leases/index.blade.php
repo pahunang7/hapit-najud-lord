@@ -2,67 +2,11 @@
 
 @section('content')
 
-<style>
-/* ===== DELETE MODAL ===== */
-.modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-
-    background: rgba(0,0,0,0.5);
-
-    align-items: center;
-    justify-content: center;
-
-    z-index: 9999;
-}
-
-.modal-box {
-    background: #fff;
-    padding: 25px;
-    width: 320px;
-    border-radius: 10px;
-    text-align: center;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-}
-
-.modal-text {
-    margin-bottom: 20px;
-}
-
-.modal-actions {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-}
-
-.btn-delete {
-    background: #e74c3c;
-    color: #fff;
-    border: none;
-    padding: 8px 18px;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.btn-cancel {
-    background: #34495e;
-    color: #fff;
-    border: none;
-    padding: 8px 18px;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.btn-delete:hover { background: #c0392b; }
-.btn-cancel:hover { background: #2c3e50; }
-</style>
-
 <hr>
-<h2 class="ltitle">Leases</h2>
+<div class="header-bar">
+    <h2 class="ltitle">Leases</h2>
+    <button class="add-btn" onclick="openLeaseModal()">+ Add Lease</button>
+</div>
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -87,48 +31,48 @@
 
 <hr>
 
-<form id="leaseForm">
-    <input type="hidden" id="editing_id">
+<!-- ✅ CREATE / EDIT MODAL -->
+<div id="leaseFormModal" class="modal-overlay">
+    <div class="modal-box">
+        <h3 id="modalTitle">Create Lease</h3>
 
-    <h3 class="createl">Create Lease</h3>
+        <form id="leaseForm">
+            <input type="hidden" id="editing_id">
 
-    <input type="number" placeholder="Lease No" id="lease_no" required>
-    <input type="date" id="start_date" required>
-    <input type="date" id="end_date" required>
-    <input type="number" placeholder="Deposit" id="deposit" required>
+            <input type="number" placeholder="Lease No" id="lease_no" required>
+            <input type="date" id="start_date" required>
+            <input type="date" id="end_date" required>
+            <input type="number" placeholder="Deposit" id="deposit" required>
 
-    <select id="deposit_paid">
-        <option value="">Deposit Paid?</option>
-        <option value="Yes">Yes</option>
-        <option value="No">No</option>
-    </select>
+            <select id="deposit_paid">
+                <option value="">Deposit Paid?</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
 
-    <input type="text" placeholder="Payment Method" id="payment_method">
-    <input type="number" placeholder="Property No" id="property_no">
-    <input type="number" placeholder="Renter No" id="renter_no">
-    <input type="number" placeholder="Staff No" id="staff_no">
+            <input type="text" placeholder="Payment Method" id="payment_method">
+            <input type="number" placeholder="Property No" id="property_no">
+            <input type="number" placeholder="Renter No" id="renter_no">
+            <input type="number" placeholder="Staff No" id="staff_no">
 
-    <button type="submit" class="form-btn">Create</button>
+            <button type="submit">Create</button>
+            <button type="button" onclick="closeLeaseModal()">Cancel</button>
+        </form>
+    </div>
+</div>
 
-    <button type="button" class="form-btn" onclick="cancelEdit()" id="cancelBtn" style="display:none;">
-        Cancel
-    </button>
-</form>
-
-<!-- ✅ DELETE MODAL (CORRECT POSITION) -->
-<div id="deleteModal" class="modal-overlay" style="display:none;">
+<!-- ✅ DELETE MODAL (FIXED POSITION) -->
+<div id="deleteModal" class="modal-overlay">
     <div class="modal-box">
         <p class="modal-text">Are you sure you want to delete this lease?</p>
-
         <div class="modal-actions">
             <button class="btn-delete" onclick="confirmDelete()">Delete</button>
-            <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+            <button class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
         </div>
     </div>
 </div>
 
 <script>
-let originalLease = null;
 let deleteId = null;
 
 // ================= LOAD TABLE =================
@@ -136,38 +80,103 @@ function loadLeases() {
     fetch('/api/leases')
     .then(res => res.json())
     .then(data => {
-        let rows = '';
+        console.log("API RESPONSE:", data); // 👈 IMPORTANT DEBUG
+
+        let tbody = document.querySelector('#leasesTable tbody');
+        tbody.innerHTML = '';
+
+        if (!data || !data.data || data.data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="11">No data found</td></tr>`;
+            return;
+        }
 
         data.data.forEach(l => {
-            rows += `
-<tr>
-    <td>${l.lease_no}</td>
-
-    <td>${l.property_no} - ${l.property_address}</td>
-
-    <td>${l.renter_no} - ${l.renter_name}</td>
-
-    <td>${l.staff_no} - ${l.staff_name}</td>
-
-    <td>${l.start_date}</td>
-    <td>${l.end_date}</td>
-    <td>${l.duration}</td>
-    <td>${l.deposit}</td>
-    <td>${l.deposit_paid}</td>
-    <td>${l.payment_method}</td>
-
-    <td>
-        <button class="table-btne" onclick="editLease(${l.lease_no})">Edit</button>
-        <button class="table-btnd" onclick="openDeleteModal(${l.lease_no})">Delete</button>
-    </td>
-</tr>`;
+            let row = `
+            <tr>
+                <td>${l.lease_no ?? ''}</td>
+                <td>${l.property_no ?? ''} - ${l.property_address ?? ''}</td>
+                <td>${l.renter_no ?? ''} - ${l.renter_name ?? ''}</td>
+                <td>${l.staff_no ?? ''} - ${l.staff_name ?? ''}</td>
+                <td>${l.start_date ?? ''}</td>
+                <td>${l.end_date ?? ''}</td>
+                <td>${l.duration ?? ''}</td>
+                <td>${l.deposit ?? ''}</td>
+                <td>${l.deposit_paid ?? ''}</td>
+                <td>${l.payment_method ?? ''}</td>
+                <td>
+                    <button class="table-btne" onclick="editLease(${l.lease_no})">Edit</button>
+                    <button class="table-btnd" onclick="openDeleteModal(${l.lease_no})">Delete</button>
+                </td>
+            </tr>
+            `;
+            tbody.innerHTML += row;
         });
-
-        document.querySelector('#leasesTable tbody').innerHTML = rows;
+    })
+    .catch(err => {
+        console.log("FETCH ERROR:", err);
     });
 }
 
-// ================= FORM SUBMIT =================
+
+// ================= INIT =================
+loadLeases();
+
+
+
+
+// ================= MODAL CONTROL =================
+function openLeaseModal() {
+    document.getElementById('leaseFormModal').style.display = 'flex';
+}
+
+function closeLeaseModal() {
+    document.getElementById('leaseFormModal').style.display = 'none';
+    document.getElementById('leaseForm').reset();
+    document.getElementById('editing_id').value = '';
+    document.getElementById('lease_no').disabled = false;
+
+    document.getElementById('modalTitle').textContent = "Create Lease";
+    document.querySelector('#leaseForm button[type="submit"]').textContent = "Create";
+}
+
+// ================= DELETE MODAL =================
+function openDeleteModal(id) {
+    deleteId = id;
+    document.getElementById('deleteModal').style.display = 'flex';
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+    deleteId = null;
+}
+
+function confirmDelete() {
+    fetch(`/api/leases/${deleteId}`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(() => {
+        loadLeases();
+        showMessage("Lease deleted!");
+        closeDeleteModal();
+    })
+    .catch(() => {
+        showMessage("Delete failed");
+    });
+}
+
+// ================= CLICK OUTSIDE =================
+window.onclick = function(e) {
+    const leaseModal = document.getElementById('leaseFormModal');
+    const deleteModal = document.getElementById('deleteModal');
+
+    if (e.target === leaseModal) closeLeaseModal();
+    if (e.target === deleteModal) closeDeleteModal();
+};
+
+// ================= SUBMIT =================
 document.getElementById('leaseForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
@@ -196,11 +205,6 @@ document.getElementById('leaseForm').addEventListener('submit', function(e) {
         data.lease_no = document.getElementById('lease_no').value;
     }
 
-    if (!id && (!data.lease_no || !data.start_date || !data.end_date || !data.deposit)) {
-        showMessage("Please fill all required fields", "error");
-        return;
-    }
-
     fetch(url, {
         method: method,
         headers: {
@@ -209,23 +213,33 @@ document.getElementById('leaseForm').addEventListener('submit', function(e) {
         },
         body: JSON.stringify(data)
     })
-    .then(async res => {
-        let responseData = await res.json();
+    .then(res => res.json()) // ✅ ONLY ONCE
+    .then(res => {
 
-        if (!res.ok) {
-            showMessage(responseData.message || "Something went wrong", "error");
-            throw new Error();
-        }
+    if (res.status === 'info') {
+        showMessage(res.message, "info");
+        return; // ❌ DO NOT reload table
+    }
 
-        return responseData;
+    if (res.status === 'error') {
+        showMessage(res.message, "error");
+        return;
+    }
+
+    // ✅ SUCCESS ONLY
+    closeLeaseModal();
+    loadLeases(); // 🔥 THIS updates UI
+    showMessage(res.message || "Success");
+
+})
+
     })
-    .then(() => {
-        showMessage(id ? 'Lease updated successfully!' : 'Lease created successfully!', 'success');
-        cancelEdit();
-        loadLeases();
-    })
-    .catch(() => {});
-});
+    .catch(err => {
+        console.error(err);
+        showMessage("Something went wrong");
+    });
+
+
 
 // ================= EDIT =================
 function editLease(id) {
@@ -234,10 +248,9 @@ function editLease(id) {
     .then(res => {
         let l = res.data;
 
-        originalLease = { ...l };
+        openLeaseModal();
 
         document.getElementById('editing_id').value = id;
-
         document.getElementById('lease_no').value = l.lease_no;
         document.getElementById('start_date').value = l.start_date;
         document.getElementById('end_date').value = l.end_date;
@@ -250,53 +263,9 @@ function editLease(id) {
 
         document.getElementById('lease_no').disabled = true;
 
-        document.querySelector('#leaseForm button[type="submit"]').textContent = "Update Lease";
-        document.querySelector('.createl').textContent = "Edit Lease";
-
-        document.getElementById('cancelBtn').style.display = 'inline-block';
+        document.getElementById('modalTitle').textContent = "Edit Lease";
+        document.querySelector('#leaseForm button[type="submit"]').textContent = "Update";
     });
-}
-
-// ================= DELETE =================
-function openDeleteModal(id) {
-    deleteId = id;
-    document.getElementById('deleteModal').style.display = 'flex';
-}
-
-function closeModal() {
-    document.getElementById('deleteModal').style.display = 'none';
-    deleteId = null;
-}
-
-function confirmDelete() {
-    fetch(`/api/leases/${deleteId}`, {
-        method: 'DELETE',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        }
-    })
-    .then(() => {
-        showMessage('Lease deleted successfully!', 'success');
-        loadLeases();
-        closeModal();
-    })
-    .catch(() => {
-        showMessage('Delete failed', 'error');
-    });
-}
-
-// ================= CANCEL =================
-function cancelEdit() {
-    document.getElementById('leaseForm').reset();
-    document.getElementById('editing_id').value = '';
-    document.getElementById('lease_no').disabled = false;
-
-    document.querySelector('#leaseForm button[type="submit"]').textContent = "Create";
-    document.querySelector('.createl').textContent = "Create Lease";
-
-    document.getElementById('cancelBtn').style.display = 'none';
-
-    originalLease = null;
 }
 
 // ================= TOAST =================
@@ -304,7 +273,6 @@ function showMessage(message, type = "success") {
     const box = document.createElement("div");
 
     box.innerText = message;
-
     box.style.position = "fixed";
     box.style.top = "20px";
     box.style.right = "20px";
@@ -312,18 +280,16 @@ function showMessage(message, type = "success") {
     box.style.color = "#fff";
     box.style.borderRadius = "6px";
     box.style.zIndex = "9999";
-    box.style.fontWeight = "bold";
-    box.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
 
-    box.style.backgroundColor = (type === "error") ? "#e74c3c" : "#2ecc71";
+    box.style.background =
+        type === "error" ? "#e74c3c" :
+        type === "info" ? "#f39c12" :
+        "#2ecc71";
 
     document.body.appendChild(box);
-
-    setTimeout(() => box.remove(), 3000);
+    setTimeout(() => box.remove(), 2000);
 }
 
-// ================= INITIAL LOAD =================
-loadLeases();
 
 </script>
 

@@ -2,7 +2,11 @@
 
 @section('content')
 <hr>
-<h2 class="vtitle">Viewings</h2>
+
+<div class="header-bar">
+    <h2 class="vtitle">Viewings</h2>
+    <button class="add-btn" onclick="openFormModal()">+ Add Viewing</button>
+</div>
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -21,23 +25,23 @@
 
 <hr>
 
-<form id="viewingForm">
-    <h3 class="createv">Record Viewing</h3>
+<div id="formModal" class="modal-overlay">
+    <div class="modal-box">
+        <h3 class="createv">Record Viewing</h3>
 
-    <!-- ✅ store composite key -->
-    <input type="hidden" id="editing_id">
+        <form id="viewingForm">
+            <input type="hidden" id="editing_id">
 
-    <input type="number" placeholder="Property No" id="property_no" required>
-    <input type="number" placeholder="Renter No" id="renter_no" required>
-    <input type="date" id="viewing_date" required>
-    <input type="text" placeholder="Comments" id="comments">
+            <input type="number" placeholder="Property No" id="property_no" required>
+            <input type="number" placeholder="Renter No" id="renter_no" required>
+            <input type="date" id="viewing_date" required>
+            <input type="text" placeholder="Comments" id="comments">
 
-    <button type="submit">Submit</button>
-
-    <button type="button" id="cancelBtn" onclick="cancelViewing()" style="display:none;">
-        Cancel
-    </button>
-</form>
+            <button type="submit">Submit</button>
+            <button type="button" onclick="closeFormModal()">Cancel</button>
+        </form>
+    </div>
+</div>
 
 <!-- DELETE MODAL -->
 <div id="deleteModal" class="modal-overlay" style="display:none;">
@@ -50,6 +54,7 @@
         </div>
     </div>
 </div>
+
 
 <script>
 let deleteData = {};
@@ -72,7 +77,7 @@ function loadViewings() {
                 <td>
                     <!-- ✅ FIXED -->
                     <button class="table-btne"
-                        onclick="editViewing(${v.property_no}, ${v.renter_no}, '${v.viewing_date}')">
+                        onclick="editViewing(${v.property_no}, ${v.renter_no}, '${v.viewing_date}' , '${v.comments}')">
                         Edit
                     </button>
 
@@ -90,16 +95,21 @@ function loadViewings() {
 
 loadViewings();
 
+function openFormModal(reset = true) {
+    if (reset) cancelViewing(); // only reset when needed
+    document.getElementById('formModal').style.display = 'flex';
+}
+
 // ================= EDIT =================
-function editViewing(property_no, renter_no, viewing_date) {
-    fetch(`/api/viewings/${property_no}/${renter_no}/${viewing_date}`)
+function editViewing(property_no, renter_no, viewing_date, comments) {
+    fetch(`/api/viewings/${property_no}/${renter_no}/${viewing_date}/${comments}`)
     .then(res => res.json())
     .then(res => {
         let v = res.data;
 
         // ✅ store composite key
         document.getElementById('editing_id').value =
-            `${property_no}|${renter_no}|${viewing_date}`;
+            `${property_no}|${renter_no}|${viewing_date}|${comments}`;
 
         document.getElementById('property_no').value = v.property_no;
         document.getElementById('renter_no').value = v.renter_no;
@@ -109,7 +119,8 @@ function editViewing(property_no, renter_no, viewing_date) {
         document.querySelector('#viewingForm button[type="submit"]').textContent = "Update Viewing";
         document.querySelector('.createv').textContent = "Edit Viewing";
 
-        document.getElementById('cancelBtn').style.display = 'inline-block';
+        openFormModal(false);
+
     });
 }
 
@@ -151,9 +162,8 @@ document.getElementById('viewingForm').addEventListener('submit', async function
     let method = 'POST';
 
     if (id) {
-        let [property_no, renter_no, viewing_date] = id.split('|');
-
-        url = `/api/viewings/${property_no}/${renter_no}/${viewing_date}`;
+        let [property_no, renter_no, viewing_date, comments] = id.split('|');
+        url = `/api/viewings/${property_no}/${renter_no}/${viewing_date}/${comments}`;
         method = 'PUT';
     }
 
@@ -183,13 +193,14 @@ document.getElementById('viewingForm').addEventListener('submit', async function
 
         showMessage(id ? "Updated successfully!" : "Created successfully!", "success");
 
-        cancelViewing();
+        closeFormModal();   // ✅ only after success
         loadViewings();
 
     } catch {
         showMessage("Error occurred", "error");
     }
 });
+
 
 // ================= CANCEL =================
 function cancelViewing() {
@@ -199,7 +210,11 @@ function cancelViewing() {
     document.querySelector('#viewingForm button[type="submit"]').textContent = "Submit";
     document.querySelector('.createv').textContent = "Record Viewing";
 
-    document.getElementById('cancelBtn').style.display = 'none';
+}
+
+function closeFormModal() {
+    document.getElementById('formModal').style.display = 'none';
+    cancelViewing(); // reset form
 }
 
 // ================= TOAST =================
@@ -223,6 +238,19 @@ function showMessage(message, type = "success") {
     document.body.appendChild(box);
 
     setTimeout(() => box.remove(), 3000);
+}
+
+window.onclick = function(e) {
+    const formModal = document.getElementById('formModal');
+    const deleteModal = document.getElementById('deleteModal');
+
+    if (e.target === formModal) {
+        closeFormModal();
+    }
+
+    if (e.target === deleteModal) {
+        closeModal();
+    }
 }
 </script>
 

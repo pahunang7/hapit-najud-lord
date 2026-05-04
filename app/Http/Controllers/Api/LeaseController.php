@@ -98,7 +98,6 @@ class LeaseController extends Controller
             ], 422);
         }
 
-        // ✅ BUSINESS RULE: duration must be 3–12 months
         $start = Carbon::parse($validated['start_date']);
         $end   = Carbon::parse($validated['end_date']);
         $duration = $start->diffInMonths($end);
@@ -110,7 +109,6 @@ class LeaseController extends Controller
             ], 422);
         }
 
-        // ✅ FIXED OVERLAP CHECK (CORRECT LOGIC)
         $overlap = DB::table('lease_agreement')
             ->where('property_no', $validated['property_no'])
             ->where(function ($q) use ($validated) {
@@ -155,58 +153,115 @@ class LeaseController extends Controller
     }
 
     /**
-     * 📌 UPDATE LEASE
+     * 📌 UPDATE LEASE (FIXED)
      */
     public function update(Request $request, int $leaseNo)
-    {
-        try {
-            $validated = $request->validate([
-                'start_date'     => 'sometimes|date',
-                'end_date'       => 'sometimes|date|after:start_date',
-                'deposit'        => 'sometimes|numeric|min:0',
-                'deposit_paid'   => 'sometimes|in:Yes,No',
-                'payment_method' => 'sometimes|string|max:50',
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'status' => 'error',
-                'errors' => $e->errors()
-            ], 422);
-        }
-
-        $lease = DB::table('lease_agreement')->where('lease_no', $leaseNo)->first();
-
-        if (!$lease) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Lease not found.'
-            ], 404);
-        }
-
-        $start = Carbon::parse($request->start_date ?? $lease->start_date);
-        $end   = Carbon::parse($request->end_date ?? $lease->end_date);
-        $duration = $start->diffInMonths($end);
-
-        if ($duration < 3 || $duration > 12) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Lease must be between 3 and 12 months.'
-            ], 422);
-        }
-
-        DB::table('lease_agreement')
-            ->where('lease_no', $leaseNo)
-            ->update(array_merge($validated, [
-                'duration'   => $duration,
-                'updated_at' => now()
-            ]));
-
+{
+    try {
+        $validated = $request->validate([
+            'start_date'     => 'sometimes|date',
+            'end_date'       => 'sometimes|date|after:start_date',
+            'deposit'        => 'sometimes|numeric|min:0',
+            'deposit_paid'   => 'sometimes|in:Yes,No',
+            'payment_method' => 'sometimes|string|max:50',
+        ]);
+    } catch (ValidationException $e) {
         return response()->json([
-            'status'  => 'success',
-            'message' => 'Lease updated successfully.'
+            'status' => 'error',
+            'errors' => $e->errors()
+        ], 422);
+    }
+
+    $lease = DB::table('lease_agreement')->where('lease_no', $leaseNo)->first();
+
+    if (!$lease) {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'Lease not found.'
+        ], 404);
+    }
+
+    // ✅ Merge old + new
+    $newData = [
+        'start_date'     => $request->start_date ?? $lease->start_date,
+        'end_date'       => $request->end_date ?? $lease->end_date,
+        'deposit'        => (float) ($request->deposit ?? $lease->deposit),
+        'deposit_paid'   => $request->deposit_paid ?? $lease->deposit_paid,
+        'payment_method' => $request->payment_method ?? $lease->payment_method,
+        'property_no' => $request->property_no ?? $lease->property_no,
+        'renter_no' => $request->renter_no ?? $lease->renter_no,
+        'staff_no' => $request->staff_no ?? $lease->staff_no,
+
+    ];
+
+    // ✅ Duration check
+    $start = Carbon::parse($newData['start_date']);
+    $end   = Carbon::parse($newData['end_date']);
+    $duration = $start->diffInMonths($end);
+
+    if ($duration < 3 || $duration > 12) {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'Lease must be between 3 and 12 months.'
+        ], 422);
+    }
+
+    $newData['duration'] = $duration;
+
+    // ✅ OVERLAP CHECK (IMPORTANT FIX)
+    $overlap = DB::table('lease_agreement')
+        ->where('property_no', $lease->property_no)
+        ->where('lease_no', '!=', $leaseNo)
+        ->where(function ($q) use ($newData) {
+            $q->where('start_date', '<=', $newData['end_date'])
+              ->where('end_date', '>=', $newData['start_date']);
+        })
+        ->exists();
+
+    if ($overlap) {
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'Another lease overlaps this date range.'
+        ], 400);
+    }
+
+    // ✅ CHECK CHANGES
+    $hasChanges = false;
+
+    foreach ($newData as $key => $value) {
+        if ($lease->$key != $value) {
+            $hasChanges = true;
+            break;
+        }
+    }
+
+    if (!$hasChanges) {
+        return response()->json([
+            'status'  => 'info',
+            'message' => 'No changes detected.'
         ]);
     }
 
+    // ✅ UPDATE
+    DB::table('lease_agreement')
+        ->where('lease_no', $leaseNo)
+        ->update(array_merge($newData, [
+        'start_date'     => $request->start_date,
+        'end_date'       => $request->end_date ,
+        'deposit'        =>  $request->deposit ,
+        'deposit_paid'   => $request->deposit_paid ,
+        'payment_method' => $request->payment_method ,
+        'property_no' => $request->property_no ,
+        'renter_no' => $request->renter_no,
+        'staff_no' => $request->staff_no,
+            'updated_at' => now()
+        ]));
+
+    return response()->json([
+        'status'  => 'success',
+        'message' => 'Lease updated successfully.'
+    ]);
+}
     /**
      * 📌 DELETE LEASE
      */

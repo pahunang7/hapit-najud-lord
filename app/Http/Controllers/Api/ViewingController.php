@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
+
 class ViewingController extends Controller
 {
     /**
@@ -122,25 +123,42 @@ class ViewingController extends Controller
     /**
      * 📌 UPDATE VIEWING
      */
-    public function update(Request $request, int $propertyNo, int $renterNo, string $viewingDate)
+    public function update(Request $request, int $propertyNo, int $renterNo, string $viewingDate ,string $comments )
     {
-        try {
-            $validated = $request->validate([
-                'comments' => 'required|string|max:1000',
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'status' => 'error',
-                'errors' => $e->errors()
-            ], 422);
-        }
+        // try {
+        //     $validated = $request->validate([
+        //         'comments' => 'required|string|max:1000',
+        //     ]);
+        // } catch (ValidationException $e) {
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'errors' => $e->errors()
+        //     ], 422);
+        // }
 
+
+  //return response()->json(['request'=> $request->input() , 'renterNo' => $renterNo, 'propertyNo' => $propertyNo, 'viewingDate' => $viewingDate, 'comments' => $comments]);
+
+         if($propertyNo === intval($request->property_no) && $renterNo === intval($request->renter_no) && $viewingDate === $request->viewing_date  && $comments === $request->comments ){
+
+               return response()->json([
+                'status' => 'error',
+                'message' => "No changes are made.",
+            ], 422);
+         }
+
+        
+
+       
         $updated = DB::table('viewing')
             ->where('property_no', $propertyNo)
             ->where('renter_no', $renterNo)
             ->where('viewing_date', $viewingDate)
             ->update([
-                'comments'   => $validated['comments'],
+                'property_no'   => $request->property_no,
+                'renter_no'   => $request->renter_no,
+                'viewing_date'   => $request->viewing_date,
+                'comments' => $request->comments,
                 'updated_at' => now(),
             ]);
 

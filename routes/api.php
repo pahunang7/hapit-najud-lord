@@ -21,8 +21,8 @@ Route::prefix('viewings')->group(function () {
     Route::get('/',                             [ViewingController::class, 'index']);
     Route::post('/',                            [ViewingController::class, 'store']);
     Route::get('/property/{property_no}',       [ViewingController::class, 'byProperty']);
-    Route::get('/{property_no}/{renter_no}/{viewing_date}', [ViewingController::class, 'show']);
-    Route::put('/{property_no}/{renter_no}/{viewing_date}',    [ViewingController::class, 'update']);
+    Route::get('/{property_no}/{renter_no}/{viewing_date}/{comments}', [ViewingController::class, 'show']);
+    Route::put('/{property_no}/{renter_no}/{viewing_date}/{comments}',[ViewingController::class, 'update']);
     Route::delete('/{property_no}/{renter_no}/{viewing_date}', [ViewingController::class, 'destroy']);
 });
 
