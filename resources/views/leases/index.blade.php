@@ -2,6 +2,65 @@
 
 @section('content')
 
+<style>
+/* ===== DELETE MODAL ===== */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    background: rgba(0,0,0,0.5);
+
+    align-items: center;
+    justify-content: center;
+
+    z-index: 9999;
+}
+
+.modal-box {
+    background: #fff;
+    padding: 25px;
+    width: 320px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.modal-text {
+    margin-bottom: 20px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.btn-delete {
+    background: #e74c3c;
+    color: #fff;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-cancel {
+    background: #34495e;
+    color: #fff;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-delete:hover { background: #c0392b; }
+.btn-cancel:hover { background: #2c3e50; }
+</style>
+
 <hr>
 <h2 class="ltitle">Leases</h2>
 
@@ -13,13 +72,13 @@
             <th>Lease No</th>
             <th>Property</th>
             <th>Renter</th>
+            <th>Staff No</th>
             <th>Start</th>
             <th>End</th>
             <th>Duration</th>
             <th>Deposit</th>
             <th>Deposit Paid</th>
             <th>Payment Method</th>
-            <th>Staff No</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -38,7 +97,6 @@
     <input type="date" id="end_date" required>
     <input type="number" placeholder="Deposit" id="deposit" required>
 
-    <!-- FIXED -->
     <select id="deposit_paid">
         <option value="">Deposit Paid?</option>
         <option value="Yes">Yes</option>
@@ -57,8 +115,21 @@
     </button>
 </form>
 
+<!-- ✅ DELETE MODAL (CORRECT POSITION) -->
+<div id="deleteModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+        <p class="modal-text">Are you sure you want to delete this lease?</p>
+
+        <div class="modal-actions">
+            <button class="btn-delete" onclick="confirmDelete()">Delete</button>
+            <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <script>
 let originalLease = null;
+let deleteId = null;
 
 // ================= LOAD TABLE =================
 function loadLeases() {
@@ -69,22 +140,27 @@ function loadLeases() {
 
         data.data.forEach(l => {
             rows += `
-            <tr>
-                <td>${l.lease_no}</td>
-                <td>${l.property_no}</td>
-                <td>${l.renter_no}</td>
-                <td>${l.start_date}</td>
-                <td>${l.end_date}</td>
-                <td>${l.duration}</td>
-                <td>${l.deposit}</td>
-                <td>${l.deposit_paid}</td>
-                <td>${l.payment_method}</td>
-                <td>${l.staff_no}</td>
-                <td>
-                    <button class="table-btne" onclick="editLease(${l.lease_no})">Edit</button>
-                    <button class="table-btnd" onclick="deleteLease(${l.lease_no})">Delete</button>
-                </td>
-            </tr>`;
+<tr>
+    <td>${l.lease_no}</td>
+
+    <td>${l.property_no} - ${l.property_address}</td>
+
+    <td>${l.renter_no} - ${l.renter_name}</td>
+
+    <td>${l.staff_no} - ${l.staff_name}</td>
+
+    <td>${l.start_date}</td>
+    <td>${l.end_date}</td>
+    <td>${l.duration}</td>
+    <td>${l.deposit}</td>
+    <td>${l.deposit_paid}</td>
+    <td>${l.payment_method}</td>
+
+    <td>
+        <button class="table-btne" onclick="editLease(${l.lease_no})">Edit</button>
+        <button class="table-btnd" onclick="openDeleteModal(${l.lease_no})">Delete</button>
+    </td>
+</tr>`;
         });
 
         document.querySelector('#leasesTable tbody').innerHTML = rows;
@@ -120,64 +196,35 @@ document.getElementById('leaseForm').addEventListener('submit', function(e) {
         data.lease_no = document.getElementById('lease_no').value;
     }
 
-    // BASIC VALIDATION
     if (!id && (!data.lease_no || !data.start_date || !data.end_date || !data.deposit)) {
-        alert("Please fill all required fields");
+        showMessage("Please fill all required fields", "error");
         return;
     }
 
-    // PREVENT EMPTY UPDATE
-    if (id && originalLease) {
-        let changed =
-            data.start_date !== originalLease.start_date ||
-            data.end_date !== originalLease.end_date ||
-            data.deposit != originalLease.deposit ||
-            data.deposit_paid !== originalLease.deposit_paid ||
-            data.payment_method !== originalLease.payment_method ||
-            data.property_no != originalLease.property_no ||
-            data.renter_no != originalLease.renter_no ||
-            data.staff_no != originalLease.staff_no;
-
-        if (!changed) {
-            alert("No changes detected!");
-            return;
-        }
-    }
-
     fetch(url, {
-    method: method,
-    headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-    },
-    body: JSON.stringify(data)
-})
-.then(async res => {
-    let responseData = await res.json();
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify(data)
+    })
+    .then(async res => {
+        let responseData = await res.json();
 
-    if (!res.ok) {
-        // ❌ HANDLE ERROR PROPERLY
-        if (responseData.error) {
-            alert(responseData.error);
-        } else if (responseData.errors) {
-            alert(Object.values(responseData.errors).join('\n'));
-        } else {
-            alert("Something went wrong");
+        if (!res.ok) {
+            showMessage(responseData.message || "Something went wrong", "error");
+            throw new Error();
         }
-        throw new Error("Request failed");
-    }
 
-    return responseData;
-})
-.then(() => {
-    alert(id ? 'Lease updated!' : 'Lease created!');
-
-    cancelEdit();
-    loadLeases();
-})
-.catch(err => {
-    console.error(err);
-});
+        return responseData;
+    })
+    .then(() => {
+        showMessage(id ? 'Lease updated successfully!' : 'Lease created successfully!', 'success');
+        cancelEdit();
+        loadLeases();
+    })
+    .catch(() => {});
 });
 
 // ================= EDIT =================
@@ -211,22 +258,30 @@ function editLease(id) {
 }
 
 // ================= DELETE =================
-function deleteLease(id) {
-    if (!confirm("Are you sure you want to delete this lease?")) return;
+function openDeleteModal(id) {
+    deleteId = id;
+    document.getElementById('deleteModal').style.display = 'flex';
+}
 
-    fetch(`/api/leases/${id}`, {
+function closeModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+    deleteId = null;
+}
+
+function confirmDelete() {
+    fetch(`/api/leases/${deleteId}`, {
         method: 'DELETE',
         headers: {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         }
     })
     .then(() => {
-        alert('Lease deleted!');
+        showMessage('Lease deleted successfully!', 'success');
         loadLeases();
+        closeModal();
     })
-    .catch(err => {
-        console.error(err);
-        alert('Delete failed');
+    .catch(() => {
+        showMessage('Delete failed', 'error');
     });
 }
 
@@ -242,6 +297,29 @@ function cancelEdit() {
     document.getElementById('cancelBtn').style.display = 'none';
 
     originalLease = null;
+}
+
+// ================= TOAST =================
+function showMessage(message, type = "success") {
+    const box = document.createElement("div");
+
+    box.innerText = message;
+
+    box.style.position = "fixed";
+    box.style.top = "20px";
+    box.style.right = "20px";
+    box.style.padding = "12px 20px";
+    box.style.color = "#fff";
+    box.style.borderRadius = "6px";
+    box.style.zIndex = "9999";
+    box.style.fontWeight = "bold";
+    box.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
+
+    box.style.backgroundColor = (type === "error") ? "#e74c3c" : "#2ecc71";
+
+    document.body.appendChild(box);
+
+    setTimeout(() => box.remove(), 3000);
 }
 
 // ================= INITIAL LOAD =================

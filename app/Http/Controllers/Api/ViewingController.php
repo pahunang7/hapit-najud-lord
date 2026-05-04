@@ -28,14 +28,6 @@ class ViewingController extends Controller
                 'p.rental_status'
             );
 
-        if ($request->filled('property_no')) {
-            $query->where('v.property_no', $request->property_no);
-        }
-
-        if ($request->filled('renter_no')) {
-            $query->where('v.renter_no', $request->renter_no);
-        }
-
         return response()->json([
             'status' => 'success',
             'data'   => $query->orderByDesc('v.viewing_date')->get()
@@ -43,52 +35,76 @@ class ViewingController extends Controller
     }
 
     /**
+     * 📌 ✅ ADD THIS (CRITICAL FIX)
+     * GET SINGLE VIEWING (for Edit)
+     */
+    public function show(int $propertyNo, int $renterNo, string $viewingDate)
+    {
+        $viewing = DB::table('viewing')
+            ->where('property_no', $propertyNo)
+            ->where('renter_no', $renterNo)
+            ->where('viewing_date', $viewingDate)
+            ->first();
+
+        if (!$viewing) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Viewing not found.'
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $viewing
+        ]);
+    }
+
+    /**
      * 📌 STORE VIEWING
      */
     public function store(Request $request)
-{
-    try {
-        $validated = $request->validate([
-            'property_no'  => 'required|integer|exists:property_for_rent,property_no',
-            'renter_no'    => 'required|integer|exists:renter,renter_no',
-            'viewing_date' => 'required|date',
-            'comments'     => 'nullable|string|max:1000',
-        ]);
-    } catch (ValidationException $e) {
-        return response()->json([
-            'status' => 'error',
-            'errors' => $e->errors()
-        ], 422);
-    }
+    {
+        try {
+            $validated = $request->validate([
+                'property_no'  => 'required|integer|exists:property_for_rent,property_no',
+                'renter_no'    => 'required|integer|exists:renter,renter_no',
+                'viewing_date' => 'required|date',
+                'comments'     => 'nullable|string|max:1000',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $e->errors()
+            ], 422);
+        }
 
-    // ✅ FIX 1: PREVENT DUPLICATE VIEWING
-    $exists = DB::table('viewing')
-        ->where('property_no', $validated['property_no'])
-        ->where('renter_no', $validated['renter_no'])
-        ->where('viewing_date', $validated['viewing_date'])
-        ->exists();
+        // prevent duplicate
+        $exists = DB::table('viewing')
+            ->where('property_no', $validated['property_no'])
+            ->where('renter_no', $validated['renter_no'])
+            ->where('viewing_date', $validated['viewing_date'])
+            ->exists();
 
-    if ($exists) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'Viewing already exists for this renter, property, and date.'
-        ], 400);
-    }
+        if ($exists) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Viewing already exists.'
+            ], 400);
+        }
 
-    // ✅ EXISTING RENT CHECK (your logic)
-    $hasLease = DB::table('lease_agreement')
-        ->where('property_no', $validated['property_no'])
-        ->whereRaw('? BETWEEN start_date AND end_date', [$validated['viewing_date']])
-        ->exists();
+        // prevent viewing if rented
+        $hasLease = DB::table('lease_agreement')
+            ->where('property_no', $validated['property_no'])
+            ->whereRaw('? BETWEEN start_date AND end_date', [$validated['viewing_date']])
+            ->exists();
 
-    if ($hasLease) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'Cannot create viewing. Property is rented on this date.'
-        ], 400);
-    }
+        if ($hasLease) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Property is rented on this date.'
+            ], 400);
+        }
 
-    try {
         DB::statement('CALL record_viewing(?, ?, ?, ?)', [
             $validated['property_no'],
             $validated['renter_no'],
@@ -101,14 +117,8 @@ class ViewingController extends Controller
             'message' => 'Viewing recorded successfully.',
             'data'    => $validated
         ], 201);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'Unexpected error while saving viewing.'
-        ], 400);
     }
-}
+
     /**
      * 📌 UPDATE VIEWING
      */
@@ -123,19 +133,6 @@ class ViewingController extends Controller
                 'status' => 'error',
                 'errors' => $e->errors()
             ], 422);
-        }
-
-        // ✅ OPTIONAL SAFETY: prevent updating if date is rented
-        $hasLease = DB::table('lease_agreement')
-            ->where('property_no', $propertyNo)
-            ->whereRaw('? BETWEEN start_date AND end_date', [$viewingDate])
-            ->exists();
-
-        if ($hasLease) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Cannot update viewing. Property is rented on this date.'
-            ], 400);
         }
 
         $updated = DB::table('viewing')
