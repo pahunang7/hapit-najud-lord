@@ -22,15 +22,35 @@ class PropertyController extends Controller
                 'p.property_type',
                 'p.no_of_rooms',
                 'p.monthly_rent',
-                'p.rental_status',
+
+                // ✅ FIXED: dynamic rental status
+                DB::raw("
+                    CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM lease_agreement l
+                            WHERE l.property_no = p.property_no
+                            AND CURRENT_DATE BETWEEN l.start_date AND l.end_date
+                        ) THEN 'rented'
+
+                        WHEN EXISTS (
+                            SELECT 1 FROM viewing v
+                            WHERE v.property_no = p.property_no
+                            AND v.viewing_date >= CURRENT_DATE
+                        ) THEN 'reserved'
+
+                        ELSE 'available'
+                    END AS rental_status
+                "),
+
                 'o.full_name AS owner_name',
                 'b.city AS branch_city',
                 DB::raw("s.first_name || ' ' || s.last_name AS assigned_staff")
             );
 
         
+        // ✅ FIXED: filter using computed field
         if ($request->filled('rental_status')) {
-            $query->where('p.rental_status', $request->rental_status);
+            $query->having('rental_status', '=', $request->rental_status);
         }
 
       
@@ -56,7 +76,6 @@ class PropertyController extends Controller
     
     public function show(int $propertyNo)
     {
-       
         $status = DB::select('SELECT * FROM get_property_rental_status(?)', [$propertyNo]);
 
         if (empty($status)) {
@@ -67,27 +86,12 @@ class PropertyController extends Controller
     }
 
     
+    // ⚠️ OPTIONAL: You can keep this, but it’s now useless
     public function updateStatus(Request $request, int $propertyNo)
     {
-        $request->validate([
-            'rental_status' => 'required|in:available,reserved,rented',
-        ]);
-
-        $updated = DB::table('property_for_rent')
-            ->where('property_no', $propertyNo)
-            ->update([
-                'rental_status' => $request->rental_status,
-                'updated_at'    => now(),
-            ]);
-
-        if (!$updated) {
-            return response()->json(['error' => 'Property not found.'], 404);
-        }
-
         return response()->json([
-            'message'       => 'Rental status updated.',
-            'rental_status' => $request->rental_status,
-        ], 200);
+            'message' => 'Rental status is now computed dynamically and cannot be manually updated.'
+        ], 400);
     }
 
     

@@ -105,7 +105,7 @@ class LeaseController extends Controller
         if ($duration < 3 || $duration > 12) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Lease must be between 3 and 12 months.'
+                'message' => 'Lease duration must be between 3 and 12 months.'
             ], 422);
         }
 
@@ -120,7 +120,7 @@ class LeaseController extends Controller
         if ($overlap) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Cannot create lease. Property already has an active lease within this date range.'
+                'message' => 'This property already has an active lease during the selected dates.'
             ], 400);
         }
 
@@ -202,7 +202,7 @@ class LeaseController extends Controller
     if ($duration < 3 || $duration > 12) {
         return response()->json([
             'status'  => 'error',
-            'message' => 'Lease must be between 3 and 12 months.'
+            'message' => 'Lease duration must be between 3 and 12 months.'
         ], 422);
     }
 
@@ -221,7 +221,7 @@ class LeaseController extends Controller
     if ($overlap) {
         return response()->json([
             'status'  => 'error',
-            'message' => 'Another lease overlaps this date range.'
+            'message' => 'Another lease already exists for this property within the selected dates.'
         ], 400);
     }
 
@@ -237,9 +237,9 @@ class LeaseController extends Controller
 
     if (!$hasChanges) {
         return response()->json([
-            'status'  => 'info',
-            'message' => 'No changes detected.'
-        ]);
+            'status'  => 'error',
+    'message' => 'No changes detected. Please modify at least one field.'
+], 400);
     }
 
     // ✅ UPDATE

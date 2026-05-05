@@ -180,6 +180,7 @@ window.onclick = function(e) {
 };
 
 // ================= SUBMIT =================
+// ================= SUBMIT =================
 document.getElementById('leaseForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
@@ -216,32 +217,39 @@ document.getElementById('leaseForm').addEventListener('submit', function(e) {
         },
         body: JSON.stringify(data)
     })
-    .then(res => res.json()) // ✅ ONLY ONCE
+    .then(res => res.json())
     .then(res => {
 
-    if (res.status === 'info') {
-        showMessage(res.message, "info");
-        return; // ❌ DO NOT reload table
-    }
+        // ✅ VALIDATION ERRORS (422)
+        if (res.errors) {
+            const firstError = Object.values(res.errors)[0][0];
+            showMessage(firstError, "error");
+            return;
+        }
 
-    if (res.status === 'error') {
-        showMessage(res.message, "error");
-        return;
-    }
+        // ✅ BACKEND ERROR (overlap, duration, etc.)
+        if (res.status === 'error') {
+            showMessage(res.message || "Something went wrong", "error");
+            return;
+        }
 
-    // ✅ SUCCESS ONLY
-    closeLeaseModal();
-    loadLeases(); // 🔥 THIS updates UI
-    showMessage(res.message || "Success");
+        // ✅ INFO (no changes)
+        if (res.status === 'info') {
+            showMessage(res.message, "info");
+            return;
+        }
 
-})
+        // ✅ SUCCESS
+        closeLeaseModal();
+        loadLeases();
+        showMessage(res.message || "Success");
 
     })
     .catch(err => {
         console.error(err);
-        showMessage("Something went wrong");
+        showMessage("Something went wrong", "error");
     });
-
+});
 
 
 // ================= EDIT =================
@@ -276,23 +284,32 @@ function showMessage(message, type = "success") {
     const box = document.createElement("div");
 
     box.innerText = message;
+
     box.style.position = "fixed";
     box.style.top = "20px";
     box.style.right = "20px";
-    box.style.padding = "12px 20px";
+    box.style.padding = "14px 22px";
     box.style.color = "#fff";
-    box.style.borderRadius = "6px";
+    box.style.borderRadius = "8px";
     box.style.zIndex = "9999";
+    box.style.fontFamily = "'Inter', sans-serif";
+    box.style.fontSize = "14px";
+    box.style.fontWeight = "600";
+    box.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
 
     box.style.background =
         type === "error" ? "#e74c3c" :
         type === "info" ? "#f39c12" :
-        "#2ecc71";
+        "#27ae60"; // 👈 nicer green like your viewing page
 
     document.body.appendChild(box);
-    setTimeout(() => box.remove(), 2000);
-}
 
+    setTimeout(() => {
+        box.style.opacity = "0";
+        box.style.transition = "0.3s";
+        setTimeout(() => box.remove(), 300);
+    }, 2000);
+}
 
 </script>
 

@@ -89,20 +89,20 @@ class ViewingController extends Controller
         if ($exists) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Viewing already exists.'
+                'message' => 'This viewing already exists for that renter and date.'
             ], 400);
         }
 
         // prevent viewing if rented
         $hasLease = DB::table('lease_agreement')
             ->where('property_no', $validated['property_no'])
-            ->whereRaw('? BETWEEN start_date AND end_date', [$validated['viewing_date']])
+            ->whereRaw('?::date BETWEEN start_date AND end_date', [$validated['viewing_date']])
             ->exists();
 
         if ($hasLease) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Property is rented on this date.'
+                'message' => 'This property is already rented on the selected date.'
             ], 400);
         }
 
@@ -143,7 +143,7 @@ class ViewingController extends Controller
 
                return response()->json([
                 'status' => 'error',
-                'message' => "No changes are made.",
+                'message' => 'No changes detected. Please modify at least one field.',
             ], 422);
          }
 

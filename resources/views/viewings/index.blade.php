@@ -67,7 +67,14 @@ function loadViewings() {
     fetch('/api/viewings')
     .then(res => res.json())
     .then(res => {
+        let tbody = document.querySelector('#viewingsTable tbody');
         let rows = '';
+
+        // ✅ STEP 2 (THIS IS WHAT YOU WERE MISSING)
+        if (!res || !res.data || res.data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5">No comments yet.</td></tr>`;
+            return;
+        }
 
         res.data.forEach(v => {
             rows += `
@@ -78,9 +85,8 @@ function loadViewings() {
                 <td>${v.comments ?? ''}</td>
 
                 <td>
-                    <!-- ✅ FIXED -->
                     <button class="table-btne"
-                        onclick="editViewing(${v.property_no}, ${v.renter_no}, '${v.viewing_date}' , '${v.comments}')">
+                        onclick="editViewing(${v.property_no}, ${v.renter_no}, '${v.viewing_date}', '${v.comments ?? ''}')">
                         Edit
                     </button>
 
@@ -92,7 +98,13 @@ function loadViewings() {
             </tr>`;
         });
 
-        document.querySelector('#viewingsTable tbody').innerHTML = rows;
+        // ✅ render rows AFTER building
+        tbody.innerHTML = rows;
+    })
+    .catch(err => {
+        console.error(err);
+        document.querySelector('#viewingsTable tbody').innerHTML =
+            `<tr><td colspan="5">Error loading data</td></tr>`;
     });
 }
 
@@ -145,11 +157,18 @@ function confirmDelete() {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         }
     })
-    .then(() => {
-        showMessage("Deleted successfully!", "success");
-        loadViewings();
-        closeModal();
-    })
+    .then(async res => {
+    const response = await res.json();
+
+    if (!res.ok) {
+        showMessage(response.message || "Delete failed", "error");
+        return;
+    }
+
+    showMessage(response.message, "success");
+    loadViewings();
+    closeModal();
+})
     .catch(() => {
         showMessage("Delete failed", "error");
     });
@@ -189,21 +208,47 @@ document.getElementById('viewingForm').addEventListener('submit', async function
 
         const response = await res.json();
 
+        // 🔴 HANDLE ERRORS PROPERLY
         if (!res.ok) {
-            showMessage(response.message || "Error", "error");
+
+            // Laravel validation errors (422)
+            if (res.status === 422 && response.errors) {
+                let messages = Object.values(response.errors)
+                    .flat()
+                    .join('\n');
+
+                showMessage(messages, "error");
+                return;
+            }
+
+            // Other server errors
+            if (res.status === 500) {
+                showMessage("Server error. Please try again.", "error");
+                return;
+            }
+
+            if (res.status === 404) {
+                showMessage("Data not found.", "error");
+                return;
+            }
+
+            // fallback
+            showMessage(response.message || "Something went wrong.", "error");
             return;
         }
 
+        // ✅ SUCCESS
         showMessage(id ? "Updated successfully!" : "Created successfully!", "success");
 
-        closeFormModal();   // ✅ only after success
+        closeFormModal();
         loadViewings();
 
-    } catch {
-        showMessage("Error occurred", "error");
+    } catch (err) {
+        // 🔴 NETWORK / FETCH ERROR
+        showMessage("Network error. Check your connection.", "error");
+        console.error(err);
     }
 });
-
 
 // ================= CANCEL =================
 function cancelViewing() {
