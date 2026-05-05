@@ -5,42 +5,43 @@
  <meta name="csrf-token" content="{{ csrf_token() }}">
  <link rel="stylesheet" href="css/style.css">
  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+ <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
  
 
     <title>DreamHome</title>
 
 </head>
 <body>
+    <div class="layout">
+        
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+    <h2><i class="fa-solid fa-house"></i> DreamHome</h2>
 
-<nav class="navbar">
+    <a href="/" class="{{ request()->is('/') ? 'active' : '' }}">
+    <i class="fa-solid fa-table-columns"></i> Dashboard
+</a>
 
-    <div class="nav-left">
-        <i class="fa-solid fa-house"></i>
-        <span class="logo-text">DreamHome</span>
+<a href="/properties" class="{{ request()->is('properties*') ? 'active' : '' }}">
+    <i class="fa-solid fa-building"></i> List of Properties
+</a>
+
+<a href="/viewings" class="{{ request()->is('viewings*') ? 'active' : '' }}">
+    <i class="fa-solid fa-calendar-check"></i> Viewings
+</a>
+
+<a href="/leases" class="{{ request()->is('leases*') ? 'active' : '' }}">
+    <i class="fa-solid fa-file-contract"></i> Lease Agreements
+</a>
+</aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            @yield('content')
+        </main>
+
     </div>
-
-    
-    <div class="nav-links">
-        <a href="/" class="{{ request()->is('/') ? 'active' : '' }}">
-            <i class="fa-solid fa-house"></i> Home
-        </a>
-
-        <a href="/properties" class="{{ request()->is('properties') ? 'active' : '' }}">
-            <i class="fa-solid fa-building"></i> Properties
-        </a>
-
-        <a href="/viewings" class="{{ request()->is('viewings') ? 'active' : '' }}">
-            <i class="fa-solid fa-eye"></i> Viewings
-        </a>
-
-        <a href="/leases" class="{{ request()->is('leases') ? 'active' : '' }}">
-            <i class="fa-solid fa-file-contract"></i> Leases
-        </a>
-    </div>
-
-</nav>
-
-@yield('content')
+</body>
 
 </body>
 </html>

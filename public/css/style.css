@@ -1,24 +1,11 @@
+* {
+    box-sizing: border-box;
+}
+
 body {
     font-family: "Inter", sans-serif;
     margin: 0;
-    background-color: #ffffff;
-}
-
-.navbar {
-    background: #1e3a5f;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 30px;
-}
-
-.nav-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: white;
-    font-weight: bold;
-    font-size: 18px;
+    background-color: #f2f6f9;
 }
 
 .logo-text {
@@ -49,10 +36,10 @@ body {
 
 .banner-video {
     width: 100%;
-    height: 350px;
+    max-width: 100%;
+    height: 280px;
     object-fit: cover;
-    margin-bottom: 50px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    display: block;
 }
 
 .welcome-card h1 {
@@ -120,18 +107,40 @@ body {
     text-align: center;
 }
 
+.table-container {
+    width: calc(100% - 80px);
+    margin: 30px auto;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
+    background: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+table th {
+    padding: 14px;
+    font-size: 14px;
+    text-align: left;
+}
+
+table td {
+    padding: 14px;
+    font-size: 14px;
+    border-bottom: 1px solid #e5e7eb;
 }
 
 table,
 th,
 td {
-    border: 1px solid #000;
-    padding: 8px;
-    text-align: center;
+    border: none;
+}
+
+table tbody tr:hover {
+    background: #f9fafb;
 }
 
 .createl,
@@ -236,9 +245,10 @@ button:hover {
 }
 
 .status {
-    padding: 5px 10px;
+    padding: 6px 12px;
+    border-radius: 6px;
     font-weight: bold;
-    text-transform: capitalize;
+    font-size: 13px;
 }
 
 .status.available {
@@ -474,4 +484,93 @@ button:hover {
 #propertiesTable th,
 #propertiesTable td {
     padding: 10px;
+}
+
+.layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: 240px;
+    background: #032343;
+    color: white;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.sidebar i {
+    width: 22px; /* 👈 slightly bigger space for icon */
+    text-align: center;
+    font-size: 16px; /* optional: adjust icon size */
+}
+
+.sidebar h2 {
+    font-family: "Inter", sans-serif;
+    margin-bottom: 20px;
+}
+
+.sidebar a {
+    color: white;
+    text-decoration: none;
+    padding: 10px;
+    border-radius: 8px;
+    transition: 0.3s;
+    gap: 14px; /* 👈 increase this (try 12–16px) */
+    padding: 10px 12px; /* 👈 adds breathing room */
+}
+
+.sidebar a:hover {
+    background: #0b60cf;
+}
+
+.sidebar a.active {
+    background: #0b60cf;
+}
+
+/* MAIN CONTENT */
+.main-content {
+    flex: 1;
+    padding: 20px;
+    overflow-x: hidden; /* IMPORTANT */
+}
+
+.btn-view {
+    background: #3b82f6;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-edit {
+    background: #f59e0b;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-delete {
+    background: #ef4444;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-view:hover {
+    background: #2563eb;
+}
+.btn-edit:hover {
+    background: #d97706;
+}
+.btn-delete:hover {
+    background: #dc2626;
 }

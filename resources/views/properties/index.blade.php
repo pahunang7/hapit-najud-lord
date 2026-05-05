@@ -1,26 +1,32 @@
 @extends('layouts.app')
 
 @section('content')
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+
 <hr>
 <h2 class="ptitle">Properties</h2>
 
 <hr>
 
-<table id="propertiesTable">
-    <thead class="phead">
-        <tr>
-            <th>ID</th>
-            <th>Address</th>
-            <th>Type</th>
-            <th>Rooms</th>
-            <th>Rent</th>
-            <th>Status</th>
-        </tr>
-    </thead>
+<div class="table-container">
+    <table id="propertiesTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Address</th>
+                <th>Type</th>
+                <th>Rooms</th>
+                <th>Rent</th>
+                <th>Status</th>
+            </tr>
+        </thead>
     <tbody></tbody>
-</table>
+    </table>
+</div>
 
-
+<hr>
 
 <script>
 fetch('/api/properties')

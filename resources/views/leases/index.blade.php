@@ -2,6 +2,9 @@
 
 @section('content')
 
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+
 <hr>
 <div class="header-bar">
     <h2 class="ltitle">Leases</h2>

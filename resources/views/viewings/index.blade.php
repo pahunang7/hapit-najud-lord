@@ -1,12 +1,15 @@
 @extends('layouts.app')
 
 @section('content')
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
 <hr>
 
 <div class="header-bar">
     <h2 class="vtitle">Viewings</h2>
     <button class="add-btn" onclick="openFormModal()">+ Add Viewing</button>
 </div>
+
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
