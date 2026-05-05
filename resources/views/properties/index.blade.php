@@ -12,7 +12,7 @@
 
 <div class="table-container">
     <table id="propertiesTable">
-        <thead>
+        <thead class=phead>
             <tr>
                 <th>ID</th>
                 <th>Address</th>

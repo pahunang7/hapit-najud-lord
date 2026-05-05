@@ -43,19 +43,19 @@
 <div class="stats">
 
     <div class="stat-box">
-        <h2>12</h2>
-        <p>Properties</p>
-    </div>
+    <h2>{{ $propertyCount }}</h2>
+    <p>Properties</p>
+</div>
 
-    <div class="stat-box">
-        <h2>8</h2>
-        <p>Viewings</p>
-    </div>
+<div class="stat-box">
+    <h2>{{ $viewingCount }}</h2>
+    <p>Viewings</p>
+</div>
 
-    <div class="stat-box">
-        <h2>5</h2>
-        <p>Active Leases</p>
-    </div>
+<div class="stat-box">
+    <h2>{{ $activeLeaseCount }}</h2>
+    <p>Active Leases</p>
+</div>
 
 </div>
 

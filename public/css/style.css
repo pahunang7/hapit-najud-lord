@@ -457,9 +457,9 @@ button:hover {
 }
 
 .sidebar i {
-    width: 22px; /* 👈 slightly bigger space for icon */
+    width: 22px;
     text-align: center;
-    font-size: 16px; /* optional: adjust icon size */
+    font-size: 16px;
 }
 
 .sidebar h2 {
@@ -473,8 +473,8 @@ button:hover {
     padding: 10px;
     border-radius: 8px;
     transition: 0.3s;
-    gap: 14px; /* 👈 increase this (try 12–16px) */
-    padding: 10px 12px; /* 👈 adds breathing room */
+    gap: 14px;
+    padding: 10px 12px;
 }
 
 .sidebar a:hover {
@@ -485,24 +485,14 @@ button:hover {
     background: #0b60cf;
 }
 
-/* MAIN CONTENT */
 .main-content {
     flex: 1;
     padding: 20px;
-    overflow-x: hidden; /* IMPORTANT */
+    overflow-x: hidden;
 }
 
 .btn-view {
     background: #3b82f6;
-    color: white;
-    padding: 6px 12px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-}
-
-.btn-edit {
-    background: #f59e0b;
     color: white;
     padding: 6px 12px;
     border-radius: 6px;
@@ -521,9 +511,6 @@ button:hover {
 
 .btn-view:hover {
     background: #2563eb;
-}
-.btn-edit:hover {
-    background: #d97706;
 }
 .btn-delete:hover {
     background: #dc2626;

@@ -72,7 +72,7 @@ function loadViewings() {
 
         // ✅ STEP 2 (THIS IS WHAT YOU WERE MISSING)
         if (!res || !res.data || res.data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5">No comments yet.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5">No viewings yet.</td></tr>`;
             return;
         }
 
