@@ -520,3 +520,23 @@ button:hover {
 .btn-delete:hover {
     background: #dc2626;
 }
+
+.lease-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#leaseSearch {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    outline: none;
+    width: 240px;
+    font-size: 14px;
+}
+
+#leaseSearch:focus {
+    border-color: #1f4e79;
+    box-shadow: 0 0 0 3px rgba(31, 78, 121, 0.15);
+}

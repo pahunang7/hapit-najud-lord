@@ -46,6 +46,21 @@ class LeaseController extends Controller
             $query->where('la.renter_no', $request->renter_no);
         }
 
+        if ($request->filled('search')) {
+
+    $search = $request->search;
+
+    $query->where(function ($q) use ($search) {
+
+        $q->where('la.lease_no', 'ILIKE', "%{$search}%")
+          ->orWhere('la.payment_method', 'ILIKE', "%{$search}%")
+          ->orWhere(DB::raw("r.first_name || ' ' || r.last_name"), 'ILIKE', "%{$search}%")
+          ->orWhere(DB::raw("s.first_name || ' ' || s.last_name"), 'ILIKE', "%{$search}%")
+          ->orWhere(DB::raw("p.street || ', ' || p.city"), 'ILIKE', "%{$search}%");
+
+    });
+}
+
         return response()->json([
             'status' => 'success',
             'data'   => $query->orderByDesc('la.start_date')->get()
@@ -84,7 +99,7 @@ class LeaseController extends Controller
                 'lease_no'       => 'required|integer|unique:lease_agreement,lease_no',
                 'start_date'     => 'required|date',
                 'end_date'       => 'required|date|after:start_date',
-                'deposit'        => 'required|numeric|min:0',
+                'deposit'        => 'required|numeric|gt:0',
                 'deposit_paid'   => 'required|in:Yes,No',
                 'payment_method' => 'required|string|max:50',
                 'property_no'    => 'required|integer|exists:property_for_rent,property_no',
@@ -150,7 +165,7 @@ class LeaseController extends Controller
         $validated = $request->validate([
             'start_date'     => 'sometimes|date',
             'end_date'       => 'sometimes|date|after:start_date',
-            'deposit'        => 'sometimes|numeric|min:0',
+            'deposit'        => 'sometimes|numeric|gt:0',
             'deposit_paid'   => 'sometimes|in:Yes,No',
             'payment_method' => 'sometimes|string|max:50',
         ]);

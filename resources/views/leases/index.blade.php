@@ -7,8 +7,25 @@
 <hr>
 
 <div class="header-bar">
+
     <h2 class="ltitle">Leases</h2>
-    <button class="add-btn" onclick="openLeaseModal()">+ Add Lease</button>
+
+    <div class="lease-controls">
+
+        <input
+            type="text"
+            id="leaseSearch"
+            placeholder="Search lease..."
+            onkeyup="loadLeases()"
+        >
+
+        <button class="add-btn"
+                onclick="openLeaseModal()">
+            + Add Lease
+        </button>
+
+    </div>
+
 </div>
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -60,9 +77,11 @@
                    required>
 
             <input type="number"
-                   placeholder="Deposit"
-                   id="deposit"
-                   required>
+       placeholder="Deposit"
+       id="deposit"
+       min="0"
+       step="0.01"
+       required>
 
             <!-- Deposit Paid -->
             <select id="deposit_paid" required>
@@ -139,7 +158,10 @@ let deleteId = null;
 // ================= LOAD TABLE =================
 function loadLeases() {
 
-    fetch('/api/leases')
+    let search =
+        document.getElementById('leaseSearch')?.value || '';
+
+    fetch(`/api/leases?search=${encodeURIComponent(search)}`)
 
     .then(res => res.json())
 
@@ -433,6 +455,16 @@ document.getElementById('leaseForm')
         data.lease_no =
             document.getElementById('lease_no').value;
     }
+
+    if (parseFloat(data.deposit) <= 0) {
+
+    showMessage(
+        "Deposit cannot be negative",
+        "error"
+    );
+
+    return;
+}
 
     fetch(url, {
 
