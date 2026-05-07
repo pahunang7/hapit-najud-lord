@@ -18,6 +18,7 @@ Route::prefix('properties')->group(function () {
 
 
 Route::prefix('viewings')->group(function () {
+    Route::get('/form-data', [ViewingController::class, 'formData']);
     Route::get('/',                             [ViewingController::class, 'index']);
     Route::post('/',                            [ViewingController::class, 'store']);
     Route::get('/property/{property_no}',       [ViewingController::class, 'byProperty']);
@@ -28,6 +29,7 @@ Route::prefix('viewings')->group(function () {
 
 
 Route::prefix('leases')->group(function () {
+    Route::get('/form-data', [LeaseController::class, 'formData']);
     Route::get('/',                          [LeaseController::class, 'index']);
     Route::post('/',                         [LeaseController::class, 'store']);
     Route::get('/property/{property_no}',    [LeaseController::class, 'byProperty']);

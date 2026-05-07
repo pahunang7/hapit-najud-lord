@@ -291,4 +291,40 @@ class LeaseController extends Controller
             'data'   => $leases
         ]);
     }
+
+    public function formData()
+{
+    $properties = DB::table('property_for_rent')
+        ->select(
+            'property_no',
+            'street',
+            'city',
+            'property_type'
+        )
+        ->orderBy('property_no')
+        ->get();
+
+    $renters = DB::table('renter')
+        ->select(
+            'renter_no',
+            DB::raw("first_name || ' ' || last_name AS renter_name")
+        )
+        ->orderBy('renter_no')
+        ->get();
+
+    $staff = DB::table('staff')
+        ->select(
+            'staff_no',
+            DB::raw("first_name || ' ' || last_name AS staff_name")
+        )
+        ->orderBy('staff_no')
+        ->get();
+
+    return response()->json([
+        'status' => 'success',
+        'properties' => $properties,
+        'renters' => $renters,
+        'staff' => $staff
+    ]);
+}
 }
