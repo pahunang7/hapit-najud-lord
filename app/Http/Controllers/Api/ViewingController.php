@@ -64,48 +64,28 @@ class ViewingController extends Controller
      * 📌 STORE VIEWING
      */
     public function store(Request $request)
-    {
-        try {
-            $validated = $request->validate([
-                'property_no'  => 'required|integer|exists:property_for_rent,property_no',
-                'renter_no'    => 'required|integer|exists:renter,renter_no',
-                'viewing_date' => 'required|date',
-                'comments'     => 'nullable|string|max:1000',
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'status' => 'error',
-                'errors' => $e->errors()
-            ], 422);
-        }
+{
+    try {
 
-        // prevent duplicate
-        $exists = DB::table('viewing')
-            ->where('property_no', $validated['property_no'])
-            ->where('renter_no', $validated['renter_no'])
-            ->where('viewing_date', $validated['viewing_date'])
-            ->exists();
+        // BASIC INPUT VALIDATION ONLY
+        $validated = $request->validate([
+            'property_no'  => 'required|integer|exists:property_for_rent,property_no',
+            'renter_no'    => 'required|integer|exists:renter,renter_no',
+            'viewing_date' => 'required|date',
+            'comments'     => 'nullable|string|max:1000',
+        ]);
 
-        if ($exists) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'This viewing already exists for that renter and date.'
-            ], 400);
-        }
+    } catch (ValidationException $e) {
 
-        // prevent viewing if rented
-        $hasLease = DB::table('lease_agreement')
-            ->where('property_no', $validated['property_no'])
-            ->whereRaw('?::date BETWEEN start_date AND end_date', [$validated['viewing_date']])
-            ->exists();
+        return response()->json([
+            'status' => 'error',
+            'errors' => $e->errors()
+        ], 422);
+    }
 
-        if ($hasLease) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'This property is already rented on the selected date.'
-            ], 400);
-        }
+    try {
 
+        // DATABASE HANDLES BUSINESS RULES
         DB::statement('CALL record_viewing(?, ?, ?, ?)', [
             $validated['property_no'],
             $validated['renter_no'],
@@ -118,62 +98,118 @@ class ViewingController extends Controller
             'message' => 'Viewing recorded successfully.',
             'data'    => $validated
         ], 201);
+
+    } catch (\Exception $e) {
+
+        // CLEAN POSTGRESQL ERROR MESSAGE
+        $message = $e->getMessage();
+
+        if (preg_match('/ERROR:\s*(.+)/', $message, $matches)) {
+            $message = trim($matches[1]);
+        }
+
+        return response()->json([
+            'status'  => 'error',
+            'message' => $message
+        ], 400);
     }
+}
 
     /**
      * 📌 UPDATE VIEWING
      */
-    public function update(Request $request, int $propertyNo, int $renterNo, string $viewingDate ,string $comments )
-    {
-        // try {
-        //     $validated = $request->validate([
-        //         'comments' => 'required|string|max:1000',
-        //     ]);
-        // } catch (ValidationException $e) {
-        //     return response()->json([
-        //         'status' => 'error',
-        //         'errors' => $e->errors()
-        //     ], 422);
-        // }
+    public function update(
+    Request $request,
+    int $propertyNo,
+    int $renterNo,
+    string $viewingDate,
+    string $comments
+)
+{
+    try {
 
+        // BASIC INPUT VALIDATION ONLY
+        $validated = $request->validate([
+            'property_no'  => 'required|integer|exists:property_for_rent,property_no',
+            'renter_no'    => 'required|integer|exists:renter,renter_no',
+            'viewing_date' => 'required|date',
+            'comments'     => 'nullable|string|max:1000',
+        ]);
 
-  //return response()->json(['request'=> $request->input() , 'renterNo' => $renterNo, 'propertyNo' => $propertyNo, 'viewingDate' => $viewingDate, 'comments' => $comments]);
+    } catch (ValidationException $e) {
 
-         if($propertyNo === intval($request->property_no) && $renterNo === intval($request->renter_no) && $viewingDate === $request->viewing_date  && $comments === $request->comments ){
+        return response()->json([
+            'status' => 'error',
+            'errors' => $e->errors()
+        ], 422);
+    }
 
-               return response()->json([
-                'status' => 'error',
-                'message' => 'No changes detected. Please modify at least one field.',
-            ], 422);
-         }
+    // CHECK IF RECORD EXISTS
+    $viewing = DB::table('viewing')
+        ->where('property_no', $propertyNo)
+        ->where('renter_no', $renterNo)
+        ->where('viewing_date', $viewingDate)
+        ->first();
 
-        
+    if (!$viewing) {
 
-       
-        $updated = DB::table('viewing')
-            ->where('property_no', $propertyNo)
-            ->where('renter_no', $renterNo)
-            ->where('viewing_date', $viewingDate)
-            ->update([
-                'property_no'   => $request->property_no,
-                'renter_no'   => $request->renter_no,
-                'viewing_date'   => $request->viewing_date,
-                'comments' => $request->comments,
-                'updated_at' => now(),
-            ]);
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'Viewing not found.'
+        ], 404);
+    }
 
-        if (!$updated) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Viewing not found.'
-            ], 404);
-        }
+    // CHECK FOR NO CHANGES
+    if (
+        $propertyNo == $validated['property_no'] &&
+        $renterNo == $validated['renter_no'] &&
+        $viewingDate == $validated['viewing_date'] &&
+        ($comments ?? '') == ($validated['comments'] ?? '')
+    ) {
+
+        return response()->json([
+            'status'  => 'info',
+            'message' => 'No changes detected. Please modify at least one field.'
+        ], 200);
+    }
+
+    try {
+
+        // DATABASE HANDLES BUSINESS RULES
+        DB::statement(
+            'CALL update_viewing(?, ?, ?, ?, ?, ?, ?)',
+            [
+                $propertyNo,
+                $renterNo,
+                $viewingDate,
+
+                $validated['property_no'],
+                $validated['renter_no'],
+                $validated['viewing_date'],
+                $validated['comments'] ?? null,
+            ]
+        );
 
         return response()->json([
             'status'  => 'success',
             'message' => 'Viewing updated successfully.'
         ]);
+
+    } catch (\Exception $e) {
+
+        // CLEAN POSTGRESQL ERROR
+        $message = $e->getMessage();
+
+        if (preg_match('/ERROR:\s*(.+)/', $message, $matches)) {
+            $message = trim($matches[1]);
+        }
+
+        return response()->json([
+            'status'  => 'error',
+            'message' => $message
+        ], 400);
     }
+}
 
     /**
      * 📌 DELETE VIEWING
