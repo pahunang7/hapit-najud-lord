@@ -180,7 +180,6 @@ window.onclick = function(e) {
 };
 
 // ================= SUBMIT =================
-// ================= SUBMIT =================
 document.getElementById('leaseForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
@@ -213,27 +212,30 @@ document.getElementById('leaseForm').addEventListener('submit', function(e) {
         method: method,
         headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
         body: JSON.stringify(data)
     })
-    .then(res => res.json())
-    .then(res => {
 
-        // ✅ VALIDATION ERRORS (422)
+    .then(async response => {
+
+        const res = await response.json();
+
+        // ✅ VALIDATION ERRORS
         if (res.errors) {
             const firstError = Object.values(res.errors)[0][0];
             showMessage(firstError, "error");
             return;
         }
 
-        // ✅ BACKEND ERROR (overlap, duration, etc.)
+        // ✅ BACKEND / DATABASE ERRORS
         if (res.status === 'error') {
             showMessage(res.message || "Something went wrong", "error");
             return;
         }
 
-        // ✅ INFO (no changes)
+        // ✅ INFO
         if (res.status === 'info') {
             showMessage(res.message, "info");
             return;
@@ -242,14 +244,19 @@ document.getElementById('leaseForm').addEventListener('submit', function(e) {
         // ✅ SUCCESS
         closeLeaseModal();
         loadLeases();
-        showMessage(res.message || "Success");
 
+        showMessage(
+            res.message || (id ? "Lease updated!" : "Lease created!"),
+            "success"
+        );
     })
+
     .catch(err => {
         console.error(err);
         showMessage("Something went wrong", "error");
     });
 });
+
 
 
 // ================= EDIT =================

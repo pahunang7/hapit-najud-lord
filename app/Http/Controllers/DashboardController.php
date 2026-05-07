@@ -21,4 +21,5 @@ class DashboardController extends Controller
             'activeLeaseCount'
         ));
     }
-}
+} 
+

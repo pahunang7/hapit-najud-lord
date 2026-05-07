@@ -25,22 +25,32 @@ class PropertyController extends Controller
 
                 // ✅ FIXED: dynamic rental status
                 DB::raw("
-                    CASE
-                        WHEN EXISTS (
-                            SELECT 1 FROM lease_agreement l
-                            WHERE l.property_no = p.property_no
-                            AND CURRENT_DATE BETWEEN l.start_date AND l.end_date
-                        ) THEN 'rented'
+    CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM lease_agreement l
+            WHERE l.property_no = p.property_no
+            AND CURRENT_DATE BETWEEN l.start_date AND l.end_date
+        ) THEN 'rented'
 
-                        WHEN EXISTS (
-                            SELECT 1 FROM viewing v
-                            WHERE v.property_no = p.property_no
-                            AND v.viewing_date >= CURRENT_DATE
-                        ) THEN 'reserved'
+        WHEN EXISTS (
+            SELECT 1
+            FROM viewing v
+            WHERE v.property_no = p.property_no
+            AND v.viewing_date >= CURRENT_DATE
+        ) THEN 'reserved'
 
-                        ELSE 'available'
-                    END AS rental_status
-                "),
+        WHEN EXISTS (
+            SELECT 1
+            FROM lease_agreement l
+            WHERE l.property_no = p.property_no
+            AND l.end_date < CURRENT_DATE
+        ) THEN 'lease expired'
+
+        ELSE 'available'
+    END AS rental_status
+"),
+                
 
                 'o.full_name AS owner_name',
                 'b.city AS branch_city',

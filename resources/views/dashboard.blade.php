@@ -13,8 +13,8 @@
     <h1>Welcome to DreamHome!</h1>
 
     <p class="welcome-text">
-        This dashboar contains an overview of your rental properties, viewings, and leases. <br>
-         Use the navigation links above to explore the different sections and manage your rental experience with ease.</p>
+        This dashboard contains an overview of your rental properties, viewings, and leases.
+        Use the navigation links above to explore the different sections and manage your rental experience with ease.</p>
 
 
 </div>

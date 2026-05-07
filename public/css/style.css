@@ -220,6 +220,11 @@ button:hover {
     color: #c62828;
 }
 
+.status.expired {
+    background-color: #d1d5db;
+    color: #2c323b;
+}
+
 .modal-overlay {
     display: none;
     position: fixed;
