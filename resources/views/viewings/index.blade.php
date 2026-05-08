@@ -200,6 +200,37 @@ function loadViewings() {
     });
 }
 
+async function loadRenters() {
+
+    const response = await fetch(
+        `/api/renters`
+    );
+
+    const result = await response.json();
+
+    const staff = result.data;
+
+    const staffSelect =
+        document.getElementById('renter_no');
+
+    staffSelect.innerHTML = `
+        <option value="">
+            Select Renter
+        </option>
+    `;
+
+    staff.forEach(member => {
+
+        staffSelect.innerHTML += `
+            <option value="${member.staff_no}">
+                ${member.full_name}
+            </option>
+        `;
+
+    });
+
+}
+
 
 // ================= LOAD DROPDOWNS =================
 async function loadFormData() {

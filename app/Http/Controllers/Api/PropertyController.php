@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\PropertyForRent;
+use App\Models\Renter;
 
 class PropertyController extends Controller
 {
@@ -136,5 +138,72 @@ class PropertyController extends Controller
             ->get();
 
         return response()->json(['data' => $staff], 200);
+    }
+
+
+
+
+  public function search(Request $request)
+    {
+        $renterId = $request->renter_no;
+
+        $renter = Renter::find($renterId);
+
+        if (!$renter) {
+            return response()->json([
+                'message' => 'Renter not found.'
+            ], 404);
+        }
+
+        $properties = PropertyForRent::query()
+
+            ->when($renter->preferred_type, function ($query) use ($renter) {
+
+                $query->where(
+                    'property_type',
+                    $renter->preferred_type
+                );
+
+            })
+
+            ->when($renter->preferred_location, function ($query) use ($renter) {
+
+    $query->where(function ($q) use ($renter) {
+
+        $q->where(
+            'city',
+            'ILIKE',
+            '%' . $renter->preferred_location . '%'
+        )
+
+        ->orWhere(
+            'area',
+            'ILIKE',
+            '%' . $renter->preferred_location . '%'
+        );
+
+    });
+
+})
+
+            ->when($renter->max_rent, function ($query) use ($renter) {
+
+                $query->where(
+                    'monthly_rent',
+                    '<=',
+                    $renter->max_rent
+                );
+
+            })
+
+            ->get();
+
+        return response()->json([
+
+            'renter' => $renter,
+
+            'properties' => $properties
+
+        ]);
     }
 }

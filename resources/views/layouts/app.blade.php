@@ -33,6 +33,10 @@
 <a href="/leases" class="{{ request()->is('leases*') ? 'active' : '' }}">
     <i class="fa-solid fa-file-contract"></i> Lease Agreements
 </a>
+
+<a href="/renter" class="{{ request()->is('renter*') ? 'active' : '' }}">
+    <i class="fa-solid fa-user-plus"></i> Renter Registration
+</a>
 </aside>
 
         <!-- MAIN CONTENT -->

@@ -14,5 +14,15 @@ class Staff extends Model
         'sex','date_of_birth','NIN','position','salary','date_joined',
         'branch_no','supervisor_staff_no'
     ];
+
+     public function branch()
+    {
+        return $this->belongsTo(BranchOffice::class, 'branch_no', 'branch_no');
+    }
+
+    public function renters()
+    {
+        return $this->hasMany(Renter::class, 'staff_no', 'staff_no');
+    }
 }
  
