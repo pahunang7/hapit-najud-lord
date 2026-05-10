@@ -8,12 +8,17 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('owner', function (Blueprint $table) {
-            $table->integer('owner_no')->primary();
-            $table->string('full_name', 100);
-            $table->string('address', 150);
-            $table->string('telephone_no', 20);
-            $table->timestamps();
-        });
+
+    $table->integer('owner_no')->primary();
+
+    $table->string('full_name', 100);
+
+    $table->string('address', 150);
+
+    $table->string('telephone_no', 20);
+
+    $table->string('email', 100)->nullable();
+});
 
         Schema::create('property_for_rent', function (Blueprint $table) {
             $table->integer('property_no')->primary();

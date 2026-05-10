@@ -37,6 +37,10 @@
 <a href="/renter" class="{{ request()->is('renter*') ? 'active' : '' }}">
     <i class="fa-solid fa-user-plus"></i> Renter Registration
 </a>
+
+<a href="/owner" class="{{ request()->is('owner*') ? 'active' : '' }}">
+                <i class="fa-solid fa-user"></i> Owners
+            </a>
 </aside>
 
         <!-- MAIN CONTENT -->

@@ -12,6 +12,8 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\Api\PropertyForRentController;
 
+use App\Http\Controllers\OwnerController;
+
 
 
 
@@ -110,5 +112,4 @@ Route::get(
 //   'allowed_origins'   => ['*'],
 //   'allowed_methods'   => ['*'],
 //   'allowed_headers'   => ['*'],
-
 
