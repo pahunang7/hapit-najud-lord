@@ -12,10 +12,17 @@ class Renter extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'first_name', 'last_name', 'address', 'telephone_no',
-        'preferred_type', 'preferred_location', 'max_rent',
-        'staff_no', 'branch_no'
-    ];
+    'renter_no',
+    'first_name',
+    'last_name',
+    'address',
+    'telephone_no',
+    'preferred_type',
+    'preferred_location',
+    'max_rent',
+    'staff_no',
+    'branch_no',
+];
 
     public function branch()
     {

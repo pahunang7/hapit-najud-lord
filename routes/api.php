@@ -12,12 +12,15 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\Api\PropertyForRentController;
 
+
 use App\Http\Controllers\OwnerController;
+use App\Http\Controllers\BranchOfficeController;
 
 
 
 
 Route::prefix('properties')->group(function () {
+    Route::get('/search', [PropertyController::class, 'search']);
     Route::get('/',              [PropertyController::class, 'index']);
     Route::get('/renters',       [PropertyController::class, 'renters']);
     Route::get('/staff',         [PropertyController::class, 'staff']);
@@ -47,9 +50,28 @@ Route::prefix('leases')->group(function () {
     Route::delete('/{lease_no}',             [LeaseController::class, 'destroy']);
 });
 
+Route::prefix('branches')->group(function () {
+    Route::get('/',                           [BranchOfficeController::class, 'apiIndex']   );
+    Route::post('/',                          [BranchOfficeController::class, 'store']      );
+    Route::get('/{branchOffice}/staff-count', [BranchOfficeController::class, 'staffCount'] );
+    Route::get('/{branchOffice}/manager',     [BranchOfficeController::class, 'manager']    );
+    Route::get('/{branch_no}/staff',          [BranchOfficeController::class, 'getStaff']   ); // ← must be before /{branchOffice}
+    Route::get('/{branchOffice}',             [BranchOfficeController::class, 'apiShow']    );
+    Route::put('/{branchOffice}',             [BranchOfficeController::class, 'update']     );
+    Route::delete('/{branchOffice}',          [BranchOfficeController::class, 'destroy']    );
+});
 
-
-
+Route::prefix('staff')->group(function () {
+    Route::get('/',                              [StaffController::class, 'apiIndex']          ); // ← fixed
+    Route::post('/',                             [StaffController::class, 'store']             );
+    Route::get('/supervisors-for-branch',        [StaffController::class, 'getSupervisors']    );
+    Route::get('/branch/{branchNo}/staff-count', [StaffController::class, 'staffCountByBranch']);
+    Route::get('/{id}/supervisor-count',         [StaffController::class, 'supervisorStaffCount']);
+    Route::get('/{id}',                          [StaffController::class, 'apiShow']           );
+    Route::put('/{id}',                          [StaffController::class, 'update']            );
+    Route::delete('/{id}',                       [StaffController::class, 'destroy']           );
+    Route::post('/{id}/assign-branch',           [StaffController::class, 'assignToBranch']    );
+});
 
 
 
@@ -74,7 +96,7 @@ Route::get('/branches', [BranchController::class, 'index']);
 // ── STAFF ROUTES ──────────────────────────────────────────────────────────────
 // GET /api/staff              → all staff
 // GET /api/staff?branch_no=1  → staff filtered by branch
-Route::get('/staff', [StaffController::class, 'index']);
+Route::get('/', [StaffController::class, 'apiIndex']); // ← this makes it /api/staff
 
 // ── RENTER (CLIENT) ROUTES ────────────────────────────────────────────────────
 Route::prefix('renters')->group(function () {
@@ -83,7 +105,7 @@ Route::prefix('renters')->group(function () {
     Route::get('/{id}',       [RenterController::class, 'show']);    // View single client
     Route::put('/{id}',       [RenterController::class, 'update']);  // Update client
     Route::delete('/{id}',    [RenterController::class, 'destroy']); // Delete client
-
+     Route::get('/{id}',       [RenterController::class, 'edit']);
     // Staff assignment — calls PostgreSQL PROCEDURE
     Route::post('/{id}/assign-staff', [RenterController::class, 'assignStaff']);
 

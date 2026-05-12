@@ -22,8 +22,20 @@
     <i class="fa-solid fa-table-columns"></i> Dashboard
 </a>
 
+<a href="/owner" class="{{ request()->is('owner*') ? 'active' : '' }}">
+                <i class="fa-solid fa-user"></i> Owners
+            </a>
+
+<a href="/branches" class="{{ request()->is('branches*') ? 'active' : '' }}">
+    <i class="fa-solid fa-code-branch"></i> Branches
+</a>
+
+<a href="/staff" class="{{ request()->is('staff*') ? 'active' : '' }}">
+    <i class="fa-solid fa-users"></i> Staff
+</a>
+            
 <a href="/properties" class="{{ request()->is('properties*') ? 'active' : '' }}">
-    <i class="fa-solid fa-building"></i> List of Properties
+    <i class="fa-solid fa-building"></i> Properties
 </a>
 
 <a href="/viewings" class="{{ request()->is('viewings*') ? 'active' : '' }}">
@@ -34,13 +46,19 @@
     <i class="fa-solid fa-file-contract"></i> Lease Agreements
 </a>
 
-<a href="/renter" class="{{ request()->is('renter*') ? 'active' : '' }}">
+<a href="/renter" class="{{ request()->is('renter') ? 'active' : '' }}">
+    <i class="fa-solid fa-user-plus"></i> Client List
+</a>
+
+<a href="/renter/create" class="{{ request()->is('renter/create') ? 'active' : '' }}">
     <i class="fa-solid fa-user-plus"></i> Renter Registration
 </a>
 
-<a href="/owner" class="{{ request()->is('owner*') ? 'active' : '' }}">
-                <i class="fa-solid fa-user"></i> Owners
-            </a>
+<a href="/renter/search" class="{{ request()->is('renter/search') ? 'active' : '' }}">
+    <i class="fa-solid fa-magnifying-glass"></i> Search Properties
+</a>
+
+
 </aside>
 
         <!-- MAIN CONTENT -->

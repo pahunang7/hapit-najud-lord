@@ -8,31 +8,53 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('staff', function (Blueprint $table) {
-            $table->integer('staff_no')->primary();
+            $table->increments('staff_no');
+
             $table->string('first_name', 50);
             $table->string('last_name', 50);
             $table->string('address', 150);
             $table->string('telephone_no', 20);
-            $table->string('sex', 10)->nullable();
+
+            $table->string('sex', 10);                     // NOT NULL per case study
             $table->date('date_of_birth');
-            $table->string('NIN', 20)->unique();
-            $table->string('position', 20)->nullable(); // Manager, Supervisor, Secretary, Staff
-            $table->decimal('salary', 10, 2)->nullable();
+
+            $table->string('nin', 20)->unique();            // NOT NULL + unique
+
+            $table->string('job_title', 20);               // was 'position' — fix here
+            $table->decimal('salary', 10, 2);              // NOT NULL per case study
+
             $table->date('date_joined');
+
             $table->integer('branch_no');
             $table->integer('supervisor_staff_no')->nullable();
-            $table->timestamps();
 
-            $table->foreign('branch_no')->references('branch_no')->on('branch_office');
+            // Manager-specific
+            $table->date('date_start')->nullable();
+            $table->decimal('car_allowance', 10, 2)->nullable();
+            $table->decimal('bonus', 10, 2)->nullable();
+
+            // Secretary-specific
+            $table->integer('typing_speed')->nullable();
+
+            $table->foreign('branch_no')
+                  ->references('branch_no')
+                  ->on('branch_office')
+                  ->onDelete('restrict');
         });
 
-            Schema::table('staff', function (Blueprint $table) {
-            $table->foreign('supervisor_staff_no')->references('staff_no')->on('staff');
+        Schema::table('staff', function (Blueprint $table) {
+            $table->foreign('supervisor_staff_no')
+                  ->references('staff_no')
+                  ->on('staff')
+                  ->onDelete('set null');
         });
     }
 
     public function down(): void
     {
+        Schema::table('staff', function (Blueprint $table) {
+            $table->dropForeign(['supervisor_staff_no']);
+        });
         Schema::dropIfExists('staff');
     }
 };

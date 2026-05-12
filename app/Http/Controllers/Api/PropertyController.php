@@ -206,4 +206,67 @@ class PropertyController extends Controller
 
         ]);
     }
+
+  public function webIndex()
+{
+    $properties = DB::table('property_for_rent')
+        ->orderBy('property_no')
+        ->get();
+
+    $owners = DB::table('owner')
+        ->orderBy('owner_no')
+        ->get();
+
+    $branches = DB::table('branch_office')
+        ->orderBy('branch_no')
+        ->get();
+
+    return view(
+        'properties.index',
+        compact('properties', 'owners', 'branches')
+    );
+}
+
+public function store(Request $request)
+{
+    $request->validate([
+        'street'        => 'required|string|max:100',
+        'area'          => 'required|string|max:100',
+        'city'          => 'required|string|max:100',
+        'postcode'      => 'required|string|max:20',
+        'property_type' => 'required|string',
+        'no_of_rooms'   => 'required|integer|min:1',
+        'monthly_rent'  => 'required|numeric|min:1',
+        'owner_no'      => 'required|integer',
+        'branch_no'     => 'required|integer',
+        'staff_no'      => 'required|integer',
+    ]);
+
+    $nextNo = DB::table('property_for_rent')->max('property_no') + 1;
+
+    DB::table('property_for_rent')->insert([
+        'property_no'   => $nextNo,
+        'street'        => $request->street,
+        'area'          => $request->area,
+        'city'          => $request->city,
+        'postcode'      => $request->postcode,
+        'property_type' => $request->property_type,
+        'no_of_rooms'   => $request->no_of_rooms,
+        'monthly_rent'  => $request->monthly_rent,
+        'owner_no'      => $request->owner_no,
+        'branch_no'     => $request->branch_no,
+        'staff_no'      => $request->staff_no,
+    ]);
+
+    return redirect()->back()->with('success', 'Property added successfully.');
+}
+
+public function destroy($id)
+{
+    DB::table('property_for_rent')
+        ->where('property_no', $id)
+        ->delete();
+
+    return redirect()->back()->with('success', 'Property deleted successfully.');
+}
 }

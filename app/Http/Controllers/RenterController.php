@@ -14,6 +14,12 @@ use Illuminate\Support\Facades\Validator;
 
 class RenterController extends Controller
 {
+    public function create()
+{
+    $branches = BranchOffice::orderBy('branch_no')->get();
+
+    return view('renter.create', compact('branches'));
+}
     // ─── CORS Helper ──────────────────────────────────────────────────────────
     // NOTE: For full CORS support, also add the middleware shown in routes/api.php
     private function corsHeaders(): array
@@ -83,11 +89,17 @@ class RenterController extends Controller
             ], 422, $this->corsHeaders());
         }
 
-        $renter = Renter::create($request->only([
-            'first_name', 'last_name', 'address', 'telephone_no',
-            'preferred_type', 'preferred_location', 'max_rent',
-            'staff_no', 'branch_no'
-        ]));
+        // ← FIXED: manually assign renter_no since table has no sequence
+        $nextNo = DB::table('renter')->max('renter_no') + 1;
+
+        $renter = Renter::create(array_merge(
+            $request->only([
+                'first_name', 'last_name', 'address', 'telephone_no',
+                'preferred_type', 'preferred_location', 'max_rent',
+                'staff_no', 'branch_no'
+            ]),
+            ['renter_no' => $nextNo]
+        ));
 
         return response()->json([
             'message' => 'Client registered successfully.',
@@ -95,17 +107,17 @@ class RenterController extends Controller
         ], 201, $this->corsHeaders());
     }
 
-    // ─── GET /api/renters/{id} ────────────────────────────────────────────────
-    public function show(int $id): JsonResponse
-    {
-        $renter = Renter::with(['branch', 'staff'])->find($id);
+        // ─── GET /api/renters/{id} ────────────────────────────────────────────────
+        public function show(int $id): JsonResponse
+        {
+            $renter = Renter::with(['branch', 'staff'])->find($id);
 
-        if (!$renter) {
-            return response()->json(['message' => 'Client not found.'], 404, $this->corsHeaders());
+            if (!$renter) {
+                return response()->json(['message' => 'Client not found.'], 404, $this->corsHeaders());
+            }
+
+            return response()->json(['data' => $renter], 200, $this->corsHeaders());
         }
-
-        return response()->json(['data' => $renter], 200, $this->corsHeaders());
-    }
 
     // ─── PUT /api/renters/{id} ────────────────────────────────────────────────
     public function update(Request $request, int $id): JsonResponse

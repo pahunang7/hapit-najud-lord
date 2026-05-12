@@ -22,23 +22,6 @@
 <hr>
 
 
-<div class="dashboard-section">
-
-    <div class="card">
-        <a href="/properties">View and manage available listings</a>
-    </div>
-
-    <div class="card">
-        <a href="/viewings">Track and record property viewings </a>
-    </div>
-
-    <div class="card">
-        <a href="/leases">Manage lease agreements</a>
-    </div>
-
-</div>
-
-
 
 <div class="stats">
 
