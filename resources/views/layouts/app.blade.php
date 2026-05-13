@@ -2,10 +2,19 @@
 <html>
 <head>
 
- <meta name="csrf-token" content="{{ csrf_token() }}">
- <link rel="stylesheet" href="css/style.css">
- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<head>
+
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
+<link rel="stylesheet" href="{{ asset('css/style.css') }}">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+
+<title>DreamHome</title>
+
+</head>
  
 
     <title>DreamHome</title>
@@ -58,6 +67,12 @@
     <i class="fa-solid fa-magnifying-glass"></i> Search Properties
 </a>
 
+<form method="POST" action="{{ route('logout') }}">
+    @csrf
+    <button type="submit" class="logout-btn">
+        <i class="fa-solid fa-right-from-bracket"></i> Logout
+    </button>
+</form>
 
 </aside>
 

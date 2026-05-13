@@ -38,11 +38,11 @@ return [
     */
 
     'guards' => [
-        'web' => [
-            'driver' => 'session',
-            'provider' => 'users',
-        ],
+    'web' => [
+        'driver'   => 'session',
+        'provider' => 'staff',   // ← changed from 'users'
     ],
+],
 
     /*
     |--------------------------------------------------------------------------
@@ -62,16 +62,11 @@ return [
     */
 
     'providers' => [
-        'users' => [
-            'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
-        ],
-
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+    'staff' => [
+        'driver' => 'eloquent',
+        'model'  => App\Models\Staff::class,
     ],
+],
 
     /*
     |--------------------------------------------------------------------------

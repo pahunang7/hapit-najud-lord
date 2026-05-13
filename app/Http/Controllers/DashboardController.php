@@ -9,6 +9,7 @@ class DashboardController extends Controller
     public function index()
     {
         $propertyCount = DB::table('property_for_rent')->count();
+
         $viewingCount = DB::table('viewing')->count();
 
         $activeLeaseCount = DB::table('lease_agreement')
@@ -21,5 +22,4 @@ class DashboardController extends Controller
             'activeLeaseCount'
         ));
     }
-} 
-
+}
