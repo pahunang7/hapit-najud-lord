@@ -11,7 +11,7 @@
 
 </div>
 
-<div class="card">
+<div class="search-property-card">
 
     <!-- SELECT CLIENT -->
     <div class="form-group full-width">
@@ -46,9 +46,9 @@
         Client Preferences
     </h3>
 
-    <div class="search-grid">
+    <div class="property-search-grid">
 
-        <div class="form-group">
+        <div class="search-form-group">
 
             <label>Preferred Type</label>
 
@@ -60,7 +60,7 @@
 
         </div>
 
-        <div class="form-group">
+        <div class="search-form-group">
 
             <label>Preferred Location</label>
 
@@ -72,7 +72,7 @@
 
         </div>
 
-        <div class="form-group">
+        <div class="search-form-group">
 
             <label>Max Rent</label>
 
@@ -87,7 +87,7 @@
     </div>
 
     <!-- RESULTS TABLE -->
-    <table class="property-table">
+    <table class="search-property-table">
 
         <thead>
 
