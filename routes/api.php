@@ -1,137 +1,343 @@
 <?php
 
-
 use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| CONTROLLERS
+|--------------------------------------------------------------------------
+*/
+
 use App\Http\Controllers\Api\PropertyController;
 use App\Http\Controllers\Api\ViewingController;
 use App\Http\Controllers\Api\LeaseController;
 
-//  CODE NI NI MARIEL MODULE 2
 use App\Http\Controllers\RenterController;
-use App\Http\Controllers\BranchController;
 use App\Http\Controllers\StaffController;
-use App\Http\Controllers\Api\PropertyForRentController;
-
-
-use App\Http\Controllers\OwnerController;
 use App\Http\Controllers\BranchOfficeController;
-
-
-
-
-Route::prefix('properties')->group(function () {
-    Route::get('/search', [PropertyController::class, 'search']);
-    Route::get('/',              [PropertyController::class, 'index']);
-    Route::get('/renters',       [PropertyController::class, 'renters']);
-    Route::get('/staff',         [PropertyController::class, 'staff']);
-    Route::get('/{id}',          [PropertyController::class, 'show']);
-    Route::patch('/{id}/status', [PropertyController::class, 'updateStatus']);
-});
-
-
-Route::prefix('viewings')->group(function () {
-    Route::get('/form-data', [ViewingController::class, 'formData']);
-    Route::get('/',                             [ViewingController::class, 'index']);
-    Route::post('/',                            [ViewingController::class, 'store']);
-    Route::get('/property/{property_no}',       [ViewingController::class, 'byProperty']);
-    Route::get('/{property_no}/{renter_no}/{viewing_date}/{comments}', [ViewingController::class, 'show']);
-    Route::put('/{property_no}/{renter_no}/{viewing_date}/{comments}',[ViewingController::class, 'update']);
-    Route::delete('/{property_no}/{renter_no}/{viewing_date}', [ViewingController::class, 'destroy']);
-});
-
-
-Route::prefix('leases')->group(function () {
-    Route::get('/form-data', [LeaseController::class, 'formData']);
-    Route::get('/',                          [LeaseController::class, 'index']);
-    Route::post('/',                         [LeaseController::class, 'store']);
-    Route::get('/property/{property_no}',    [LeaseController::class, 'byProperty']);
-    Route::get('/{lease_no}',                [LeaseController::class, 'show']);
-    Route::put('/{lease_no}',                [LeaseController::class, 'update']);
-    Route::delete('/{lease_no}',             [LeaseController::class, 'destroy']);
-});
-
-Route::prefix('branches')->group(function () {
-    Route::get('/',                           [BranchOfficeController::class, 'apiIndex']   );
-    Route::post('/',                          [BranchOfficeController::class, 'store']      );
-    Route::get('/{branchOffice}/staff-count', [BranchOfficeController::class, 'staffCount'] );
-    Route::get('/{branchOffice}/manager',     [BranchOfficeController::class, 'manager']    );
-    Route::get('/{branch_no}/staff',          [BranchOfficeController::class, 'getStaff']   ); // ← must be before /{branchOffice}
-    Route::get('/{branchOffice}',             [BranchOfficeController::class, 'apiShow']    );
-    Route::put('/{branchOffice}',             [BranchOfficeController::class, 'update']     );
-    Route::delete('/{branchOffice}',          [BranchOfficeController::class, 'destroy']    );
-});
-
-Route::prefix('staff')->group(function () {
-    Route::get('/',                              [StaffController::class, 'apiIndex']          ); // ← fixed
-    Route::post('/',                             [StaffController::class, 'store']             );
-    Route::get('/supervisors-for-branch',        [StaffController::class, 'getSupervisors']    );
-    Route::get('/branch/{branchNo}/staff-count', [StaffController::class, 'staffCountByBranch']);
-    Route::get('/{id}/supervisor-count',         [StaffController::class, 'supervisorStaffCount']);
-    Route::get('/{id}',                          [StaffController::class, 'apiShow']           );
-    Route::put('/{id}',                          [StaffController::class, 'update']            );
-    Route::delete('/{id}',                       [StaffController::class, 'destroy']           );
-    Route::post('/{id}/assign-branch',           [StaffController::class, 'assignToBranch']    );
-});
-
-
-
-// CODE NI NI MARIEL MODULE 2
-
-// FILE: routes/api.php
-// Replace the contents of your existing routes/api.php with this.
-
-
-// ── Handle preflight OPTIONS requests (for CORS from browser) ─────────────────
-Route::options('{any}', function () {
-    return response('', 200)->withHeaders([
-        'Access-Control-Allow-Origin'  => '*',
-        'Access-Control-Allow-Methods' => 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers' => 'Content-Type, Accept, X-Requested-With',
-    ]);
-})->where('any', '.*');
-
-// ── BRANCH ROUTES ─────────────────────────────────────────────────────────────
-Route::get('/branches', [BranchController::class, 'index']);
-
-// ── STAFF ROUTES ──────────────────────────────────────────────────────────────
-// GET /api/staff              → all staff
-// GET /api/staff?branch_no=1  → staff filtered by branch
-Route::get('/', [StaffController::class, 'apiIndex']); // ← this makes it /api/staff
-
-// ── RENTER (CLIENT) ROUTES ────────────────────────────────────────────────────
-Route::prefix('renters')->group(function () {
-    Route::get('/',           [RenterController::class, 'index']);   // List all clients
-    Route::post('/',          [RenterController::class, 'store']);   // Register new client
-    Route::get('/{id}',       [RenterController::class, 'show']);    // View single client
-    Route::put('/{id}',       [RenterController::class, 'update']);  // Update client
-    Route::delete('/{id}',    [RenterController::class, 'destroy']); // Delete client
-     Route::get('/{id}',       [RenterController::class, 'edit']);
-    // Staff assignment — calls PostgreSQL PROCEDURE
-    Route::post('/{id}/assign-staff', [RenterController::class, 'assignStaff']);
-
-    // Get assigned staff — calls PostgreSQL FUNCTION
-    Route::get('/{id}/staff',         [RenterController::class, 'getRenterStaff']);
-
-    // Activity log for a client (populated by triggers)
-    Route::get('/{id}/logs',          [RenterController::class, 'getLogs']);
-});
+use App\Http\Controllers\OwnerController;
 
 /*
 |--------------------------------------------------------------------------
-| PROPERTY SEARCH
+| AUTHENTICATED API ROUTES
 |--------------------------------------------------------------------------
 */
 
-Route::get(
-    '/properties/search',
-    [PropertyController::class, 'search']
-);
+Route::middleware(['auth'])->group(function () {
 
+    /*
+    |--------------------------------------------------------------------------
+    | PROPERTIES API
+    |--------------------------------------------------------------------------
+    | Manager + Supervisor
+    |--------------------------------------------------------------------------
+    */
 
-// ── IMPORTANT: Also update config/cors.php ────────────────────────────────────
-// In config/cors.php, set:
-//   'paths'             => ['api/*'],
-//   'allowed_origins'   => ['*'],
-//   'allowed_methods'   => ['*'],
-//   'allowed_headers'   => ['*'],
+    Route::middleware('role:Manager,Supervisor')
+    ->prefix('properties')
+    ->group(function () {
 
+        // VIEW
+        Route::get('/', [PropertyController::class, 'index']);
+
+        Route::get('/search', [PropertyController::class, 'search']);
+
+        Route::get('/renters', [PropertyController::class, 'renters']);
+
+        Route::get('/staff', [PropertyController::class, 'staff']);
+
+        Route::get('/{id}', [PropertyController::class, 'show']);
+
+        // CREATE / UPDATE
+        Route::post('/', [PropertyController::class, 'store']);
+
+        Route::put('/{id}', [PropertyController::class, 'update']);
+
+        Route::patch('/{id}/status', [PropertyController::class, 'updateStatus']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | PROPERTY DELETE
+    |--------------------------------------------------------------------------
+    | Manager ONLY
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('role:Manager')
+    ->prefix('properties')
+    ->group(function () {
+
+        Route::delete('/{id}', [PropertyController::class, 'destroy']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | VIEWINGS API
+    |--------------------------------------------------------------------------
+    | Manager + Supervisor + Secretary
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('role:Manager,Supervisor,Secretary')
+    ->prefix('viewings')
+    ->group(function () {
+
+        Route::get('/', [ViewingController::class, 'index']);
+
+        Route::get('/form-data', [ViewingController::class, 'formData']);
+
+        Route::post('/', [ViewingController::class, 'store']);
+
+        Route::get('/property/{property_no}', [ViewingController::class, 'byProperty']);
+
+        Route::get(
+            '/{property_no}/{renter_no}/{viewing_date}/{comments}',
+            [ViewingController::class, 'show']
+        );
+
+        Route::put(
+            '/{property_no}/{renter_no}/{viewing_date}/{comments}',
+            [ViewingController::class, 'update']
+        );
+
+        Route::delete(
+            '/{property_no}/{renter_no}/{viewing_date}',
+            [ViewingController::class, 'destroy']
+        );
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | LEASES API
+    |--------------------------------------------------------------------------
+    | Manager + Supervisor + Secretary
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('role:Manager,Supervisor,Secretary')
+    ->prefix('leases')
+    ->group(function () {
+
+        Route::get('/', [LeaseController::class, 'index']);
+
+        Route::get('/form-data', [LeaseController::class, 'formData']);
+
+        Route::post('/', [LeaseController::class, 'store']);
+
+        Route::get('/property/{property_no}', [LeaseController::class, 'byProperty']);
+
+        Route::get('/{lease_no}', [LeaseController::class, 'show']);
+
+        Route::put('/{lease_no}', [LeaseController::class, 'update']);
+
+        Route::delete('/{lease_no}', [LeaseController::class, 'destroy']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | BRANCHES API
+    |--------------------------------------------------------------------------
+    | VIEW ACCESS: Manager + Supervisor
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('role:Manager,Supervisor')
+    ->prefix('branches')
+    ->group(function () {
+
+        // VIEW
+        Route::get('/', [BranchOfficeController::class, 'apiIndex']);
+
+        Route::get('/{branchOffice}/staff-count', [
+            BranchOfficeController::class,
+            'staffCount'
+        ]);
+
+        Route::get('/{branchOffice}/manager', [
+            BranchOfficeController::class,
+            'manager'
+        ]);
+
+        Route::get('/{branch_no}/staff', [
+            BranchOfficeController::class,
+            'getStaff'
+        ]);
+
+        Route::get('/{branchOffice}', [
+            BranchOfficeController::class,
+            'apiShow'
+        ]);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | BRANCH CRUD
+    |--------------------------------------------------------------------------
+    | Manager ONLY
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('role:Manager')
+    ->prefix('branches')
+    ->group(function () {
+
+        Route::post('/', [BranchOfficeController::class, 'store']);
+
+        Route::put('/{branchOffice}', [
+            BranchOfficeController::class,
+            'update'
+        ]);
+
+        Route::delete('/{branchOffice}', [
+            BranchOfficeController::class,
+            'destroy'
+        ]);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | STAFF API
+    |--------------------------------------------------------------------------
+    | VIEW ACCESS: Manager + Supervisor
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('role:Manager,Supervisor')
+    ->prefix('staff')
+    ->group(function () {
+
+        // IMPORTANT:
+        // Put special routes BEFORE /{id}
+
+        Route::get('/supervisors-for-branch', [
+            StaffController::class,
+            'getSupervisors'
+        ]);
+
+        Route::get('/branch/{branchNo}/staff-count', [
+            StaffController::class,
+            'staffCountByBranch'
+        ]);
+
+        Route::get('/{id}/supervisor-count', [
+            StaffController::class,
+            'supervisorStaffCount'
+        ]);
+
+        Route::get('/', [StaffController::class, 'apiIndex']);
+
+        Route::get('/{id}', [StaffController::class, 'apiShow']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | STAFF CRUD
+    |--------------------------------------------------------------------------
+    | Manager ONLY
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('role:Manager')
+    ->prefix('staff')
+    ->group(function () {
+
+        Route::post('/', [StaffController::class, 'store']);
+
+        Route::put('/{id}', [StaffController::class, 'update']);
+
+        Route::delete('/{id}', [StaffController::class, 'destroy']);
+
+        Route::post('/{id}/assign-branch', [
+            StaffController::class,
+            'assignToBranch'
+        ]);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | RENTERS API
+    |--------------------------------------------------------------------------
+    | VIEW ACCESS: Manager + Supervisor + Secretary
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('role:Manager,Supervisor,Secretary')
+    ->prefix('renters')
+    ->group(function () {
+
+        Route::get('/', [RenterController::class, 'apiIndex']);
+
+        Route::get('/{id}/staff', [
+            RenterController::class,
+            'getRenterStaff'
+        ]);
+
+        Route::get('/{id}/logs', [
+            RenterController::class,
+            'getLogs'
+        ]);
+
+        Route::get('/{id}', [RenterController::class, 'show']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | RENTER CRUD
+    |--------------------------------------------------------------------------
+    | Manager + Secretary ONLY
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('role:Manager,Secretary')
+    ->prefix('renters')
+    ->group(function () {
+
+        Route::post('/', [RenterController::class, 'store']);
+
+        Route::put('/{id}', [RenterController::class, 'update']);
+
+        Route::delete('/{id}', [RenterController::class, 'destroy']);
+
+        Route::post('/{id}/assign-staff', [
+            RenterController::class,
+            'assignStaff'
+        ]);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | OWNERS API
+    |--------------------------------------------------------------------------
+    | VIEW/ADD/EDIT: Manager + Supervisor
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('role:Manager,Supervisor')
+    ->prefix('owners')
+    ->group(function () {
+
+        Route::get('/', [OwnerController::class, 'index']);
+
+        Route::post('/', [OwnerController::class, 'store']);
+
+        Route::get('/{id}', [OwnerController::class, 'show']);
+
+        Route::put('/{id}', [OwnerController::class, 'update']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | OWNER DELETE
+    |--------------------------------------------------------------------------
+    | Manager ONLY
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('role:Manager')
+    ->prefix('owners')
+    ->group(function () {
+
+        Route::delete('/{id}', [OwnerController::class, 'destroy']);
+    });
+});

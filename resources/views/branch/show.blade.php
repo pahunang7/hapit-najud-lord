@@ -1,7 +1,17 @@
 @extends('layouts.app')
 @section('content')
 
+
 <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+
+async function loadBranch() {
+    try {
+        const response = await fetch(`/api/branches/${branchId}`, {
+            headers: {
+                'Accept':       'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
 
 <div class="page-header">
     <div>

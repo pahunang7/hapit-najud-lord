@@ -32,32 +32,10 @@ class RenterController extends Controller
     }
 
     // ─── GET /api/renters ─────────────────────────────────────────────────────
-    public function index(): JsonResponse
-    {
-        $renters = Renter::with(['branch', 'staff'])
-            ->orderBy('renter_no', 'asc')
-            ->get()
-            ->map(function ($r) {
-                return [
-                    'renter_no'          => $r->renter_no,
-                    'first_name'         => $r->first_name,
-                    'last_name'          => $r->last_name,
-                    'address'            => $r->address,
-                    'telephone_no'       => $r->telephone_no,
-                    'preferred_type'     => $r->preferred_type,
-                    'preferred_location' => $r->preferred_location,
-                    'max_rent'           => $r->max_rent,
-                    'branch_no'          => $r->branch_no,
-                    'branch_city'        => $r->branch?->city,
-                    'staff_no'           => $r->staff_no,
-                    'staff_name'         => $r->staff
-                        ? $r->staff->first_name . ' ' . $r->staff->last_name
-                        : null,
-                ];
-            });
-
-        return response()->json(['data' => $renters], 200, $this->corsHeaders());
-    }
+    public function index()
+{
+    return view('renter.index');
+}
 
     // ─── POST /api/renters ────────────────────────────────────────────────────
     public function store(Request $request): JsonResponse
@@ -239,4 +217,32 @@ class RenterController extends Controller
 
         return response()->json(['data' => $logs], 200, $this->corsHeaders());
     }
+
+    public function apiIndex()
+{
+    $renters = DB::table('renter as r')
+        ->join('branch_office as b', 'b.branch_no', '=', 'r.branch_no')
+        ->join('staff as s', 's.staff_no', '=', 'r.staff_no')
+        ->select(
+            'r.renter_no',
+            'r.first_name',
+            'r.last_name',
+            'r.address',
+            'r.telephone_no',
+            'r.preferred_type',
+            'r.preferred_location',
+            'r.max_rent',
+            'r.branch_no',
+            'b.city as branch_city',
+            'r.staff_no',
+            DB::raw("s.first_name || ' ' || s.last_name AS staff_name")
+        )
+        ->get();
+
+    return response()->json([
+        'data' => $renters
+    ]);
+}
+
+
 }

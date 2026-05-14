@@ -7,7 +7,7 @@
         <p>All staff across DreamHome branches</p>
     </div>
     <div style="display:flex; gap:10px;">
-        <a href="{{ route('supervisor.list') }}" class="cancel-btn">Supervisors</a>
+        <a href="{{ route('staff.supervisor.list') }}" class="cancel-btn">Supervisors</a>
         <a href="{{ route('staff.create') }}" class="add-btn">+ Add Staff</a>
     </div>
 </div>

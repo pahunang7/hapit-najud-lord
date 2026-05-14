@@ -35,7 +35,7 @@
     <i class="fa-solid fa-table-columns"></i> Dashboard
 </a>
 
-<a href="/owner" class="{{ request()->is('owner*') ? 'active' : '' }}">
+<a href="/owners" class="{{ request()->is('owner*') ? 'active' : '' }}">
                 <i class="fa-solid fa-user"></i> Owners
             </a>
 

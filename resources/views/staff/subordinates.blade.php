@@ -10,7 +10,7 @@
             {{ $supervisor->first_name }} {{ $supervisor->last_name }}
         </p>
     </div>
-    <a href="{{ route('supervisor.list') }}" class="cancel-btn">← Back to Supervisors</a>
+    <a href="{{ route('staff.supervisor.list') }}" class="cancel-btn">← Back to Supervisors</a>
 </div>
 
 <div class="table-card">

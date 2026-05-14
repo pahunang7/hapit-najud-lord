@@ -36,32 +36,23 @@ class LoginController extends Controller
         'password' => 'required',
     ]);
 
-    // Find user manually
-    $staff = Staff::where('nin', $request->nin)->first();
+    // Attempt login using nin + password
+    if (!Auth::attempt([
+        'nin' => $request->nin,
+        'password' => $request->password
+    ])) {
 
-    // User not found
-    if (!$staff) {
         return back()->withErrors([
             'nin' => 'Invalid NIN or password.',
-        ]);
+        ])->withInput();
     }
-
-    // Login user manually
-    Auth::login($staff);
 
     // Regenerate session
     $request->session()->regenerate();
 
-    // Redirect by role
-    if (str_contains(strtolower($staff->job_title), 'manager')) {
-        return redirect()->route('manager.dashboard');
-    }
+    $staff = Auth::user();
 
-    if (str_contains(strtolower($staff->job_title), 'supervisor')) {
-        return redirect()->route('supervisor.dashboard');
-    }
-
-    return redirect()->route('staff.dashboard');
+    return $this->redirectByRole($staff->job_title);
 }
 
     /**
@@ -82,19 +73,22 @@ class LoginController extends Controller
      * Redirect users based on role
      */
     private function redirectByRole(string $jobTitle): RedirectResponse
-    {
-        $jobTitle = strtolower($jobTitle);
+{
+    $jobTitle = strtolower($jobTitle);
 
-        return match (true) {
+    return match (true) {
 
-            str_contains($jobTitle, 'manager')
-                => redirect()->route('manager.dashboard'),
+        str_contains($jobTitle, 'manager')
+            => redirect()->route('manager.dashboard'),
 
-            str_contains($jobTitle, 'supervisor')
-                => redirect()->route('supervisor.dashboard'),
+        str_contains($jobTitle, 'supervisor')
+            => redirect()->route('supervisor.dashboard'),
 
-            default
-                => redirect()->route('staff.dashboard'),
-        };
-    }
+        str_contains($jobTitle, 'secretary')
+            => redirect()->route('secretary.dashboard'),
+
+        default
+            => redirect()->route('staff.dashboard'),
+    };
+}
 }

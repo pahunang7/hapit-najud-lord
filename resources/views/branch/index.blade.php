@@ -33,14 +33,7 @@
             @endforeach
         </select>
 
-        {{-- FILTER: Job title / position --}}
-        <select name="job_title">
-            <option value="">All Job Titles</option>
-            <option value="Manager"    {{ request('job_title') == 'Manager'    ? 'selected' : '' }}>Manager</option>
-            <option value="Supervisor" {{ request('job_title') == 'Supervisor' ? 'selected' : '' }}>Supervisor</option>
-            <option value="Secretary"  {{ request('job_title') == 'Secretary'  ? 'selected' : '' }}>Secretary</option>
-            <option value="Staff"      {{ request('job_title') == 'Staff'      ? 'selected' : '' }}>Staff</option>
-        </select>
+        
 
         <button type="submit">Search</button>
         <a href="{{ route('branch.index') }}" class="cancel-btn">Clear</a>

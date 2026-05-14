@@ -6,6 +6,7 @@ use App\Models\Staff;
 use App\Models\BranchOffice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class StaffController extends Controller
 {
@@ -105,7 +106,29 @@ class StaffController extends Controller
         }
 
         try {
+
+            // Default password = NIN
+            $validated['password'] = Hash::make($validated['nin']);
+            
+            // Ensure supervisor belongs to selected branch
+if (!empty($validated['supervisor_staff_no'])) {
+
+    $supervisor = Staff::find($validated['supervisor_staff_no']);
+
+    if (
+        !$supervisor ||
+        $supervisor->branch_no != $validated['branch_no'] ||
+        $supervisor->job_title !== 'Supervisor'
+    ) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Selected supervisor does not belong to the chosen branch.',
+        ], 422);
+    }
+}
+
             $staff = Staff::create($validated);
+
         } catch (\Illuminate\Database\QueryException $e) {
             // DB triggers raise exceptions — surface them clearly
             return response()->json([
@@ -207,11 +230,34 @@ class StaffController extends Controller
             $validated['typing_speed'] = null;
         }
 
-        try {
-            $staff->update(collect($validated)->except([
-                'nok_name', 'nok_relationship', 'nok_address', 'nok_phone',
-            ])->toArray());
-        } catch (\Illuminate\Database\QueryException $e) {
+        $validated['password'] = Hash::make($validated['nin']);
+
+        // Ensure supervisor belongs to selected branch
+if (!empty($validated['supervisor_staff_no'])) {
+
+    $supervisor = Staff::find($validated['supervisor_staff_no']);
+
+    if (
+        !$supervisor ||
+        $supervisor->branch_no != $validated['branch_no'] ||
+        $supervisor->job_title !== 'Supervisor'
+    ) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Selected supervisor does not belong to the chosen branch.',
+        ], 422);
+    }
+}
+try {
+
+    $staff->update(collect($validated)->except([
+        'nok_name',
+        'nok_relationship',
+        'nok_address',
+        'nok_phone',
+    ])->toArray());
+
+} catch (\Illuminate\Database\QueryException $e) {
             return response()->json([
                 'success' => false,
                 'message' => $this->parseTriggerMessage($e->getMessage()),
@@ -242,32 +288,49 @@ class StaffController extends Controller
     // DELETE — FIXED: handles JSON and redirect
     // =====================================================
     public function destroy(Request $request, $id)
-    {
-        $staff = Staff::findOrFail($id);
+{
+    $staff = Staff::findOrFail($id);
 
-        // Prevent deleting a supervisor who still has subordinates
-        if ($staff->subordinates()->count() > 0) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cannot delete supervisor with assigned subordinates. Reassign them first.',
-                ], 422);
-            }
-            return redirect()->route('staff.index')
-                ->with('error', 'Cannot delete supervisor with assigned subordinates.');
-        }
-
-        $staff->delete();
+    // Prevent deleting managers
+    if ($staff->job_title === 'Manager') {
 
         if ($request->expectsJson()) {
             return response()->json([
-                'success' => true,
-                'message' => 'Staff deleted successfully',
-            ]);
+                'success' => false,
+                'message' => 'Managers cannot be deleted.',
+            ], 422);
         }
 
-        return redirect()->route('staff.index')->with('success', 'Staff deleted successfully');
+        return redirect()->route('staff.index')
+            ->with('error', 'Managers cannot be deleted.');
     }
+
+    // Prevent deleting supervisors with subordinates
+    if ($staff->subordinates()->count() > 0) {
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete supervisor with assigned subordinates. Reassign them first.',
+            ], 422);
+        }
+
+        return redirect()->route('staff.index')
+            ->with('error', 'Cannot delete supervisor with assigned subordinates.');
+    }
+
+    $staff->delete();
+
+    if ($request->expectsJson()) {
+        return response()->json([
+            'success' => true,
+            'message' => 'Staff deleted successfully',
+        ]);
+    }
+
+    return redirect()->route('staff.index')
+        ->with('success', 'Staff deleted successfully');
+}
 
     // =====================================================
     // DB FUNCTION: staff count by branch

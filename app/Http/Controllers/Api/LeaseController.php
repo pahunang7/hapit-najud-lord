@@ -48,18 +48,18 @@ class LeaseController extends Controller
 
         if ($request->filled('search')) {
 
-    $search = $request->search;
+            $search = $request->search;
 
-    $query->where(function ($q) use ($search) {
+            $query->where(function ($q) use ($search) {
 
-        $q->where('la.lease_no', 'ILIKE', "%{$search}%")
-          ->orWhere('la.payment_method', 'ILIKE', "%{$search}%")
-          ->orWhere(DB::raw("r.first_name || ' ' || r.last_name"), 'ILIKE', "%{$search}%")
-          ->orWhere(DB::raw("s.first_name || ' ' || s.last_name"), 'ILIKE', "%{$search}%")
-          ->orWhere(DB::raw("p.street || ', ' || p.city"), 'ILIKE', "%{$search}%");
+                $q->where('la.lease_no', 'ILIKE', "%{$search}%")
+                  ->orWhere('la.payment_method', 'ILIKE', "%{$search}%")
+                  ->orWhere(DB::raw("r.first_name || ' ' || r.last_name"), 'ILIKE', "%{$search}%")
+                  ->orWhere(DB::raw("s.first_name || ' ' || s.last_name"), 'ILIKE', "%{$search}%")
+                  ->orWhere(DB::raw("p.street || ', ' || p.city"), 'ILIKE', "%{$search}%");
 
-    });
-}
+            });
+        }
 
         return response()->json([
             'status' => 'success',
@@ -77,6 +77,7 @@ class LeaseController extends Controller
             ->first();
 
         if (!$lease) {
+
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Lease not found.'
@@ -95,6 +96,7 @@ class LeaseController extends Controller
     public function store(Request $request)
     {
         try {
+
             $validated = $request->validate([
                 'lease_no'       => 'required|integer|unique:lease_agreement,lease_no',
                 'start_date'     => 'required|date',
@@ -106,32 +108,63 @@ class LeaseController extends Controller
                 'renter_no'      => 'required|integer|exists:renter,renter_no',
                 'staff_no'       => 'required|integer|exists:staff,staff_no',
             ]);
+
         } catch (ValidationException $e) {
+
             return response()->json([
                 'status' => 'error',
                 'errors' => $e->errors()
             ], 422);
         }
 
+        // Calculate duration in months
         $start = Carbon::parse($validated['start_date']);
         $end   = Carbon::parse($validated['end_date']);
+
         $duration = (int) $start->diffInMonths($end);
 
-    
-
         try {
-            DB::statement('CALL create_lease_agreement(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-                $validated['lease_no'],
-                $validated['start_date'],
-                $validated['end_date'],
-                $duration,
-                $validated['deposit'],
-                $validated['deposit_paid'],
-                $validated['payment_method'],
-                $validated['property_no'],
-                $validated['renter_no'],
-                $validated['staff_no'],
-            ]);
+
+            /*
+            =====================================================
+            IMPORTANT FIX:
+            PostgreSQL procedures require explicit data types.
+            Using DB::statement with raw placeholders caused:
+            procedure create_lease_agreement(unknown...) does not exist
+
+            Solution:
+            Use explicit PostgreSQL CASTS (::INTEGER, ::DATE, etc.)
+            =====================================================
+            */
+
+            DB::statement(
+                '
+                CALL create_lease_agreement(
+                    ?::INTEGER,
+                    ?::DATE,
+                    ?::DATE,
+                    ?::INTEGER,
+                    ?::NUMERIC,
+                    ?::VARCHAR,
+                    ?::VARCHAR,
+                    ?::INTEGER,
+                    ?::INTEGER,
+                    ?::INTEGER
+                )
+                ',
+                [
+                    $validated['lease_no'],
+                    $validated['start_date'],
+                    $validated['end_date'],
+                    $duration,
+                    $validated['deposit'],
+                    $validated['deposit_paid'],
+                    $validated['payment_method'],
+                    $validated['property_no'],
+                    $validated['renter_no'],
+                    $validated['staff_no'],
+                ]
+            );
 
             return response()->json([
                 'status'  => 'success',
@@ -141,137 +174,154 @@ class LeaseController extends Controller
 
         } catch (\Exception $e) {
 
-    $message = $e->getMessage();
+            $message = $e->getMessage();
 
-    if (str_contains($message, 'SQLSTATE')) {
-        preg_match('/ERROR:\s*(.*)/', $message, $matches);
-        $message = $matches[1] ?? $message;
-    }
+            if (str_contains($message, 'ERROR:')) {
 
-    return response()->json([
-        'status' => 'error',
-        'message' => trim($message)
-    ], 400);
-}
+                preg_match('/ERROR:\s*(.*)/', $message, $matches);
+
+                $message = $matches[1] ?? $message;
+            }
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => trim($message)
+            ], 400);
+        }
     }
 
     /**
-     * 📌 UPDATE LEASE (FIXED)
+     * 📌 UPDATE LEASE
      */
     public function update(Request $request, int $leaseNo)
-{
-    try {
+    {
+        try {
 
-        $validated = $request->validate([
-            'start_date'     => 'sometimes|date',
-            'end_date'       => 'sometimes|date|after:start_date',
-            'deposit'        => 'sometimes|numeric|gt:0',
-            'deposit_paid'   => 'sometimes|in:Yes,No',
-            'payment_method' => 'sometimes|string|max:50',
-        ]);
+            $validated = $request->validate([
+                'start_date'     => 'sometimes|date',
+                'end_date'       => 'sometimes|date|after:start_date',
+                'deposit'        => 'sometimes|numeric|gt:0',
+                'deposit_paid'   => 'sometimes|in:Yes,No',
+                'payment_method' => 'sometimes|string|max:50',
+                'property_no'    => 'sometimes|integer|exists:property_for_rent,property_no',
+                'renter_no'      => 'sometimes|integer|exists:renter,renter_no',
+                'staff_no'       => 'sometimes|integer|exists:staff,staff_no',
+            ]);
 
-    } catch (ValidationException $e) {
+        } catch (ValidationException $e) {
 
-        return response()->json([
-            'status' => 'error',
-            'errors' => $e->errors()
-        ], 422);
-    }
+            return response()->json([
+                'status' => 'error',
+                'errors' => $e->errors()
+            ], 422);
+        }
 
-    $lease = DB::table('lease_agreement')
-        ->where('lease_no', $leaseNo)
-        ->first();
+        $lease = DB::table('lease_agreement')
+            ->where('lease_no', $leaseNo)
+            ->first();
 
-    if (!$lease) {
+        if (!$lease) {
 
-        return response()->json([
-            'status'  => 'error',
-            'message' => 'Lease not found.'
-        ], 404);
-    }
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Lease not found.'
+            ], 404);
+        }
 
-    // ✅ Merge old + new values
-    $newData = [
+        // Merge existing + updated values
+        $newData = [
 
-        'start_date'     => $request->start_date ?? $lease->start_date,
-        'end_date'       => $request->end_date ?? $lease->end_date,
-        'deposit'        => (float) ($request->deposit ?? $lease->deposit),
-        'deposit_paid'   => $request->deposit_paid ?? $lease->deposit_paid,
-        'payment_method' => $request->payment_method ?? $lease->payment_method,
-        'property_no'    => $request->property_no ?? $lease->property_no,
-        'renter_no'      => $request->renter_no ?? $lease->renter_no,
-        'staff_no'       => $request->staff_no ?? $lease->staff_no,
-    ];
+            'start_date'     => $request->start_date ?? $lease->start_date,
+            'end_date'       => $request->end_date ?? $lease->end_date,
+            'deposit'        => (float) ($request->deposit ?? $lease->deposit),
+            'deposit_paid'   => $request->deposit_paid ?? $lease->deposit_paid,
+            'payment_method' => $request->payment_method ?? $lease->payment_method,
+            'property_no'    => $request->property_no ?? $lease->property_no,
+            'renter_no'      => $request->renter_no ?? $lease->renter_no,
+            'staff_no'       => $request->staff_no ?? $lease->staff_no,
+        ];
 
-    // ✅ Recalculate duration
-    $start = Carbon::parse($newData['start_date']);
-    $end   = Carbon::parse($newData['end_date']);
+        // Recalculate duration
+        $start = Carbon::parse($newData['start_date']);
+        $end   = Carbon::parse($newData['end_date']);
 
-    $duration = (int) $start->diffInMonths($end);
+        $duration = (int) $start->diffInMonths($end);
 
-    $newData['duration'] = $duration;
+        $newData['duration'] = $duration;
 
-    // ✅ Check if anything changed
-    $hasChanges = false;
+        // Check if anything changed
+        $hasChanges = false;
 
-    foreach ($newData as $key => $value) {
+        foreach ($newData as $key => $value) {
 
-        if ($lease->$key != $value) {
-            $hasChanges = true;
-            break;
+            if ($lease->$key != $value) {
+                $hasChanges = true;
+                break;
+            }
+        }
+
+        if (!$hasChanges) {
+
+            return response()->json([
+                'status'  => 'info',
+                'message' => 'No changes detected. Please modify at least one field.'
+            ], 200);
+        }
+
+        try {
+
+            DB::statement(
+                '
+                CALL update_lease_agreement(
+                    ?::INTEGER,
+                    ?::DATE,
+                    ?::DATE,
+                    ?::INTEGER,
+                    ?::NUMERIC,
+                    ?::VARCHAR,
+                    ?::VARCHAR,
+                    ?::INTEGER,
+                    ?::INTEGER,
+                    ?::INTEGER
+                )
+                ',
+                [
+                    $leaseNo,
+                    $newData['start_date'],
+                    $newData['end_date'],
+                    $newData['duration'],
+                    $newData['deposit'],
+                    $newData['deposit_paid'],
+                    $newData['payment_method'],
+                    $newData['property_no'],
+                    $newData['renter_no'],
+                    $newData['staff_no'],
+                ]
+            );
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Lease updated successfully.'
+            ]);
+
+        } catch (\Exception $e) {
+
+            $message = $e->getMessage();
+
+            if (str_contains($message, 'ERROR:')) {
+
+                preg_match('/ERROR:\s*(.*)/', $message, $matches);
+
+                $message = $matches[1] ?? $message;
+            }
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => trim($message)
+            ], 400);
         }
     }
 
-    if (!$hasChanges) {
-
-        return response()->json([
-            'status'  => 'info',
-            'message' => 'No changes detected. Please modify at least one field.'
-        ], 200);
-    }
-
-    // ✅ CALL POSTGRESQL PROCEDURE
-    try {
-
-        DB::statement(
-            'CALL update_lease_agreement(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [
-                $leaseNo,
-                $newData['start_date'],
-                $newData['end_date'],
-                $newData['duration'],
-                $newData['deposit'],
-                $newData['deposit_paid'],
-                $newData['payment_method'],
-                $newData['property_no'],
-                $newData['renter_no'],
-                $newData['staff_no'],
-            ]
-        );
-
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Lease updated successfully.'
-        ]);
-
-    } catch (\Exception $e) {
-
-        $message = $e->getMessage();
-
-        // ✅ Clean PostgreSQL error
-        if (str_contains($message, 'ERROR:')) {
-
-            preg_match('/ERROR:\s*(.*)/', $message, $matches);
-
-            $message = $matches[1] ?? $message;
-        }
-
-        return response()->json([
-            'status'  => 'error',
-            'message' => trim($message)
-        ], 400);
-    }
-}
     /**
      * 📌 DELETE LEASE
      */
@@ -282,6 +332,7 @@ class LeaseController extends Controller
             ->delete();
 
         if (!$deleted) {
+
             return response()->json([
                 'status'  => 'error',
                 'message' => 'Lease not found.'
@@ -295,11 +346,14 @@ class LeaseController extends Controller
     }
 
     /**
-     * 📌 GET BY PROPERTY
+     * 📌 GET LEASES BY PROPERTY
      */
     public function byProperty(int $propertyNo)
     {
-        $leases = DB::select('SELECT * FROM get_lease_by_property(?)', [$propertyNo]);
+        $leases = DB::select(
+            'SELECT * FROM get_lease_by_property(?)',
+            [$propertyNo]
+        );
 
         return response()->json([
             'status' => 'success',
@@ -307,39 +361,42 @@ class LeaseController extends Controller
         ]);
     }
 
+    /**
+     * 📌 FORM DATA
+     */
     public function formData()
-{
-    $properties = DB::table('property_for_rent')
-        ->select(
-            'property_no',
-            'street',
-            'city',
-            'property_type'
-        )
-        ->orderBy('property_no')
-        ->get();
+    {
+        $properties = DB::table('property_for_rent')
+            ->select(
+                'property_no',
+                'street',
+                'city',
+                'property_type'
+            )
+            ->orderBy('property_no')
+            ->get();
 
-    $renters = DB::table('renter')
-        ->select(
-            'renter_no',
-            DB::raw("first_name || ' ' || last_name AS renter_name")
-        )
-        ->orderBy('renter_no')
-        ->get();
+        $renters = DB::table('renter')
+            ->select(
+                'renter_no',
+                DB::raw("first_name || ' ' || last_name AS renter_name")
+            )
+            ->orderBy('renter_no')
+            ->get();
 
-    $staff = DB::table('staff')
-        ->select(
-            'staff_no',
-            DB::raw("first_name || ' ' || last_name AS staff_name")
-        )
-        ->orderBy('staff_no')
-        ->get();
+        $staff = DB::table('staff')
+            ->select(
+                'staff_no',
+                DB::raw("first_name || ' ' || last_name AS staff_name")
+            )
+            ->orderBy('staff_no')
+            ->get();
 
-    return response()->json([
-        'status' => 'success',
-        'properties' => $properties,
-        'renters' => $renters,
-        'staff' => $staff
-    ]);
-}
+        return response()->json([
+            'status'    => 'success',
+            'properties'=> $properties,
+            'renters'   => $renters,
+            'staff'     => $staff
+        ]);
+    }
 }
