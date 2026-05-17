@@ -137,6 +137,18 @@ class RenterController extends Controller
         ], 200, $this->corsHeaders());
     }
 
+    // ─── GET /renter/{id}/edit ────────────────────────────────────────────────
+    public function edit(int $id)
+    {
+        $renter = Renter::with(['branch', 'staff'])->find($id);
+
+        if (!$renter) {
+            abort(404);
+        }
+
+        return view('renter.edit', compact('renter'));
+    }
+
     // ─── DELETE /api/renters/{id} ─────────────────────────────────────────────
     public function destroy(int $id): JsonResponse
     {

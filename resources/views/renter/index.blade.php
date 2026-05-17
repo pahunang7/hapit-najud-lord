@@ -104,37 +104,25 @@ async function loadClients() {
 }
 
 async function deleteClient(id) {
-
-    const confirmed = confirm(
-        'Are you sure you want to delete this client?'
-    );
-
+    const confirmed = confirm('Are you sure you want to delete this client?');
     if (!confirmed) return;
 
     try {
-
         const response = await fetch(`/api/renters/${id}`, {
-
             method: 'DELETE',
-
+            credentials: 'same-origin',   // ← add this
             headers: {
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,  // ← add this
             }
-
         });
 
         const result = await response.json();
-
         alert(result.message);
-
         loadClients();
-
     } catch (error) {
-
         console.error(error);
-
     }
-
 }
 
 loadClients();

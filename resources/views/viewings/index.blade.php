@@ -151,43 +151,59 @@ async function loadFormData() {
 
     try {
         const res = await fetch('/api/viewings/form-data', {
-            credentials: 'same-origin',
-            headers: { 'Accept': 'application/json' },
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         });
 
         if (!res.ok) {
-            console.error('Failed to load form data:', res.status);
+            console.error('Form data failed:', res.status);
+            showMessage('Failed to load dropdown data', 'error');
             return;
         }
 
         const data = await res.json();
 
-        // PROPERTY DROPDOWN
+        console.log('FORM DATA:', data);
+
+        // ================= PROPERTY =================
         const propertySelect = document.getElementById('property_no');
         propertySelect.innerHTML = `<option value="">Select Property</option>`;
 
         (data.properties ?? []).forEach(p => {
             propertySelect.innerHTML += `
                 <option value="${p.property_no}">
-                    #${p.property_no} - ${p.property_type} - ${p.street}, ${p.city}
+                    #${p.property_no} - ${p.property_type ?? ''} - ${p.street ?? ''}, ${p.city ?? ''}
                 </option>
             `;
         });
 
-        // RENTER DROPDOWN — use renter_no (not staff_no)
+        if (!data.properties || data.properties.length === 0) {
+            propertySelect.innerHTML += `<option disabled>No properties available</option>`;
+        }
+
+        // ================= RENTER =================
         const renterSelect = document.getElementById('renter_no');
         renterSelect.innerHTML = `<option value="">Select Renter</option>`;
 
         (data.renters ?? []).forEach(r => {
             renterSelect.innerHTML += `
                 <option value="${r.renter_no}">
-                    #${r.renter_no} - ${r.renter_name}
+                    #${r.renter_no} - ${r.renter_name ?? 'Unknown'}
                 </option>
             `;
         });
 
+        if (!data.renters || data.renters.length === 0) {
+            renterSelect.innerHTML += `<option disabled>No renters available</option>`;
+        }
+
     } catch (err) {
         console.error('loadFormData error:', err);
+        showMessage('Network error loading dropdowns', 'error');
     }
 }
 
@@ -357,8 +373,10 @@ function showMessage(message, type = 'success') {
 }
 
 // ================= INIT =================
-loadViewings();
-loadFormData();
+document.addEventListener('DOMContentLoaded', () => {
+    loadViewings();
+    loadFormData();
+});
 
 </script>
 

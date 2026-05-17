@@ -12,10 +12,6 @@ class StaffController extends Controller
 {
     // =====================================================
     // HELPER: Job titles that can supervise others
-    // Used consistently in create(), edit(), getSupervisors()
-    // Case study: supervisors are called "Supervisor" role.
-    // Managers run the branch; they don't appear in the
-    // supervisor dropdown to avoid confusion with the trigger.
     // =====================================================
     private const SUPERVISORY_ROLES = ['Supervisor'];
 
@@ -25,6 +21,15 @@ class StaffController extends Controller
     public function index(Request $request)
     {
         $query = Staff::query();
+        $user  = auth()->user();
+
+        // ── RBAC SCOPE ────────────────────────────────────────
+        // Supervisor sees only the staff they directly supervise
+        if ($user->job_title === 'Supervisor') {
+            $query->where('supervisor_staff_no', $user->staff_no);
+        }
+        // Manager and Secretary see all staff — no scope needed
+        // ─────────────────────────────────────────────────────
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -61,7 +66,6 @@ class StaffController extends Controller
     {
         return view('staff.create', [
             'branches'    => BranchOffice::orderBy('city')->get(),
-            // Supervisors dropdown: only Supervisor role (consistent with getSupervisors API)
             'supervisors' => Staff::whereIn('job_title', self::SUPERVISORY_ROLES)
                                   ->orderBy('last_name')
                                   ->get(),
@@ -69,8 +73,7 @@ class StaffController extends Controller
     }
 
     // =====================================================
-    // STORE — triggers (single manager, supervisor rules,
-    //         basic staff rules) fire automatically in DB
+    // STORE
     // =====================================================
     public function store(Request $request)
     {
@@ -87,15 +90,12 @@ class StaffController extends Controller
             'date_joined'         => 'required|date',
             'branch_no'           => 'required|exists:branch_office,branch_no',
             'supervisor_staff_no' => 'nullable|exists:staff,staff_no',
-            // Manager fields
             'date_start'          => 'nullable|date',
             'car_allowance'       => 'nullable|numeric|min:0',
             'bonus'               => 'nullable|numeric|min:0',
-            // Secretary field
             'typing_speed'        => 'nullable|integer|min:1',
         ]);
 
-        // Clear role-specific fields that don't belong to this job title
         if ($validated['job_title'] !== 'Manager') {
             $validated['date_start']    = null;
             $validated['car_allowance'] = null;
@@ -106,38 +106,31 @@ class StaffController extends Controller
         }
 
         try {
-
-            // Default password = NIN
             $validated['password'] = Hash::make($validated['nin']);
-            
-            // Ensure supervisor belongs to selected branch
-if (!empty($validated['supervisor_staff_no'])) {
 
-    $supervisor = Staff::find($validated['supervisor_staff_no']);
-
-    if (
-        !$supervisor ||
-        $supervisor->branch_no != $validated['branch_no'] ||
-        $supervisor->job_title !== 'Supervisor'
-    ) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Selected supervisor does not belong to the chosen branch.',
-        ], 422);
-    }
-}
+            if (!empty($validated['supervisor_staff_no'])) {
+                $supervisor = Staff::find($validated['supervisor_staff_no']);
+                if (
+                    !$supervisor ||
+                    $supervisor->branch_no != $validated['branch_no'] ||
+                    $supervisor->job_title !== 'Supervisor'
+                ) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Selected supervisor does not belong to the chosen branch.',
+                    ], 422);
+                }
+            }
 
             $staff = Staff::create($validated);
 
         } catch (\Illuminate\Database\QueryException $e) {
-            // DB triggers raise exceptions — surface them clearly
             return response()->json([
                 'success' => false,
                 'message' => $this->parseTriggerMessage($e->getMessage()),
             ], 422);
         }
 
-        // Save next-of-kin (case study: required for every staff member)
         if ($request->filled('nok_name')) {
             \App\Models\NextOfKin::updateOrCreate(
                 ['staff_no' => $staff->staff_no],
@@ -162,7 +155,15 @@ if (!empty($validated['supervisor_staff_no'])) {
     // =====================================================
     public function showPage($id)
     {
+        $user  = auth()->user();
         $staff = Staff::findOrFail($id);
+
+        // Supervisor can only view their own team members
+        if ($user->job_title === 'Supervisor' &&
+            $staff->supervisor_staff_no != $user->staff_no) {
+            abort(403, 'You do not have permission to view this staff member.');
+        }
+
         return view('staff.show', compact('staff'));
     }
 
@@ -171,7 +172,18 @@ if (!empty($validated['supervisor_staff_no'])) {
     // =====================================================
     public function apiShow($id)
     {
+        $user  = auth()->user();
         $staff = Staff::with(['branch', 'supervisor', 'nextOfKin'])->findOrFail($id);
+
+        // Supervisor can only view their own team members
+        if ($user->job_title === 'Supervisor' &&
+            $staff->supervisor_staff_no != $user->staff_no) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to view this staff member.',
+            ], 403);
+        }
+
         return response()->json(['success' => true, 'data' => $staff]);
     }
 
@@ -190,7 +202,7 @@ if (!empty($validated['supervisor_staff_no'])) {
     }
 
     // =====================================================
-    // UPDATE — triggers fire automatically
+    // UPDATE
     // =====================================================
     public function update(Request $request, $id)
     {
@@ -213,14 +225,12 @@ if (!empty($validated['supervisor_staff_no'])) {
             'car_allowance'       => 'nullable|numeric|min:0',
             'bonus'               => 'nullable|numeric|min:0',
             'typing_speed'        => 'nullable|integer|min:1',
-            // NOK
             'nok_name'            => 'nullable|string|max:100',
             'nok_relationship'    => 'nullable|string|max:50',
             'nok_address'         => 'nullable|string|max:150',
             'nok_phone'           => 'nullable|string|max:20',
         ]);
 
-        // Clear role-specific fields that don't belong to this job title
         if ($validated['job_title'] !== 'Manager') {
             $validated['date_start']    = null;
             $validated['car_allowance'] = null;
@@ -232,39 +242,35 @@ if (!empty($validated['supervisor_staff_no'])) {
 
         $validated['password'] = Hash::make($validated['nin']);
 
-        // Ensure supervisor belongs to selected branch
-if (!empty($validated['supervisor_staff_no'])) {
+        if (!empty($validated['supervisor_staff_no'])) {
+            $supervisor = Staff::find($validated['supervisor_staff_no']);
+            if (
+                !$supervisor ||
+                $supervisor->branch_no != $validated['branch_no'] ||
+                $supervisor->job_title !== 'Supervisor'
+            ) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Selected supervisor does not belong to the chosen branch.',
+                ], 422);
+            }
+        }
 
-    $supervisor = Staff::find($validated['supervisor_staff_no']);
+        try {
+            $staff->update(collect($validated)->except([
+                'nok_name',
+                'nok_relationship',
+                'nok_address',
+                'nok_phone',
+            ])->toArray());
 
-    if (
-        !$supervisor ||
-        $supervisor->branch_no != $validated['branch_no'] ||
-        $supervisor->job_title !== 'Supervisor'
-    ) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Selected supervisor does not belong to the chosen branch.',
-        ], 422);
-    }
-}
-try {
-
-    $staff->update(collect($validated)->except([
-        'nok_name',
-        'nok_relationship',
-        'nok_address',
-        'nok_phone',
-    ])->toArray());
-
-} catch (\Illuminate\Database\QueryException $e) {
+        } catch (\Illuminate\Database\QueryException $e) {
             return response()->json([
                 'success' => false,
                 'message' => $this->parseTriggerMessage($e->getMessage()),
             ], 422);
         }
 
-        // Update next-of-kin
         if ($request->filled('nok_name')) {
             \App\Models\NextOfKin::updateOrCreate(
                 ['staff_no' => $staff->staff_no],
@@ -285,52 +291,46 @@ try {
     }
 
     // =====================================================
-    // DELETE — FIXED: handles JSON and redirect
+    // DELETE
     // =====================================================
     public function destroy(Request $request, $id)
-{
-    $staff = Staff::findOrFail($id);
+    {
+        $staff = Staff::findOrFail($id);
 
-    // Prevent deleting managers
-    if ($staff->job_title === 'Manager') {
+        if ($staff->job_title === 'Manager') {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Managers cannot be deleted.',
+                ], 422);
+            }
+            return redirect()->route('staff.index')
+                ->with('error', 'Managers cannot be deleted.');
+        }
+
+        if ($staff->subordinates()->count() > 0) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete supervisor with assigned subordinates. Reassign them first.',
+                ], 422);
+            }
+            return redirect()->route('staff.index')
+                ->with('error', 'Cannot delete supervisor with assigned subordinates.');
+        }
+
+        $staff->delete();
 
         if ($request->expectsJson()) {
             return response()->json([
-                'success' => false,
-                'message' => 'Managers cannot be deleted.',
-            ], 422);
+                'success' => true,
+                'message' => 'Staff deleted successfully',
+            ]);
         }
 
         return redirect()->route('staff.index')
-            ->with('error', 'Managers cannot be deleted.');
+            ->with('success', 'Staff deleted successfully');
     }
-
-    // Prevent deleting supervisors with subordinates
-    if ($staff->subordinates()->count() > 0) {
-
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cannot delete supervisor with assigned subordinates. Reassign them first.',
-            ], 422);
-        }
-
-        return redirect()->route('staff.index')
-            ->with('error', 'Cannot delete supervisor with assigned subordinates.');
-    }
-
-    $staff->delete();
-
-    if ($request->expectsJson()) {
-        return response()->json([
-            'success' => true,
-            'message' => 'Staff deleted successfully',
-        ]);
-    }
-
-    return redirect()->route('staff.index')
-        ->with('success', 'Staff deleted successfully');
-}
 
     // =====================================================
     // DB FUNCTION: staff count by branch
@@ -346,8 +346,7 @@ try {
     }
 
     // =====================================================
-    // API: GET SUPERVISORS FOR A BRANCH (used by JS dropdown)
-    // FIXED: now consistent — only Supervisor role, same as create/edit views
+    // API: GET SUPERVISORS FOR A BRANCH
     // =====================================================
     public function getSupervisors(Request $request)
     {
@@ -372,6 +371,15 @@ try {
     public function apiIndex(Request $request)
     {
         $query = Staff::with(['branch', 'supervisor']);
+        $user  = auth()->user();
+
+        // ── RBAC SCOPE ────────────────────────────────────────
+        // Supervisor sees only the staff they directly supervise
+        if ($user->job_title === 'Supervisor') {
+            $query->where('supervisor_staff_no', $user->staff_no);
+        }
+        // Manager and Secretary see all — no scope needed
+        // ─────────────────────────────────────────────────────
 
         if ($request->filled('branch_no')) {
             $query->where('branch_no', $request->branch_no);
@@ -412,7 +420,6 @@ try {
             ->where('job_title', 'Supervisor')
             ->get();
 
-        // Attach DB function count to each supervisor
         foreach ($supervisors as $supervisor) {
             $result = DB::selectOne(
                 'SELECT get_supervisor_staff_count(?) AS total',
@@ -435,48 +442,45 @@ try {
     // SUPERVISOR LIST (all branches)
     // =====================================================
     public function supervisorList()
-    {
-        $supervisors = Staff::with(['branch', 'subordinates'])
-            ->where('job_title', 'Supervisor')
-            ->orderBy('last_name')
-            ->get();
+{
+    $user  = auth()->user();
+    $query = Staff::with(['branch', 'subordinates'])
+        ->where('job_title', 'Supervisor');
 
-        foreach ($supervisors as $supervisor) {
-            $result = DB::selectOne(
-                'SELECT get_supervisor_staff_count(?) AS total',
-                [$supervisor->staff_no]
-            );
-            $supervisor->db_staff_count = $result->total ?? 0;
-        }
-
-        return view('staff.supervisorlist', compact('supervisors'));
+    // Supervisor sees only themselves in this list
+    if ($user->job_title === 'Supervisor') {
+        $query->where('staff_no', $user->staff_no);
     }
+
+    $supervisors = $query->orderBy('last_name')->get();
+
+    foreach ($supervisors as $supervisor) {
+        $result = DB::selectOne(
+            'SELECT get_supervisor_staff_count(?) AS total',
+            [$supervisor->staff_no]
+        );
+        $supervisor->db_staff_count = $result->total ?? 0;
+    }
+
+    return view('staff.supervisorlist', compact('supervisors'));
+}
 
     // =====================================================
     // SUBORDINATES for a supervisor
     // =====================================================
     public function subordinates($id)
-    {
-        $supervisor = Staff::with('subordinates')->findOrFail($id);
-        return view('staff.subordinates', compact('supervisor'));
+{
+    $user       = auth()->user();
+    $supervisor = Staff::with('subordinates')->findOrFail($id);
+
+    // Supervisor can only view their own team
+    if ($user->job_title === 'Supervisor' &&
+        $supervisor->staff_no != $user->staff_no) {
+        abort(403, 'You do not have permission to view this team.');
     }
 
-    // =====================================================
-    // API: SUPERVISOR STAFF COUNT
-    // =====================================================
-    public function supervisorStaffCount($supervisorNo)
-    {
-        $result = DB::selectOne(
-            'SELECT get_supervisor_staff_count(?) AS total',
-            [$supervisorNo]
-        );
-
-        return response()->json([
-            'success'       => true,
-            'supervisor_no' => $supervisorNo,
-            'staff_count'   => $result->total ?? 0,
-        ]);
-    }
+    return view('staff.subordinates', compact('supervisor'));
+}
 
     // =====================================================
     // ASSIGN STAFF TO BRANCH (stored procedure)
@@ -512,7 +516,6 @@ try {
     // =====================================================
     private function parseTriggerMessage(string $message): string
     {
-        // PostgreSQL trigger RAISE EXCEPTION messages are inside "ERROR: <message>"
         if (preg_match('/ERROR:\s*(.+?)(?:\nDETAIL|$)/s', $message, $matches)) {
             return trim($matches[1]);
         }

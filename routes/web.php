@@ -6,6 +6,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\RenterController;
 use App\Http\Controllers\OwnerController;
 use App\Http\Controllers\Api\PropertyController;
+use App\Http\Controllers\Api\ViewingController;
+use App\Http\Controllers\Api\LeaseController;
 use App\Http\Controllers\BranchOfficeController;
 use App\Http\Controllers\StaffController;
 
@@ -43,12 +45,6 @@ Route::post('/logout',[LoginController::class, 'logout'])->name('logout');
 |==========================================================================
 | DASHBOARDS
 |==========================================================================
-| RBAC:
-|   Manager    → ✔ Full
-|   Supervisor → ✔ Full
-|   Secretary  → ✔ Limited
-|   Staff      → ✔ Limited
-|--------------------------------------------------------------------------
 */
 
 Route::middleware(['auth', 'role:Manager'])->group(function () {
@@ -75,12 +71,6 @@ Route::middleware(['auth'])->group(function () {
 |==========================================================================
 | VIEWINGS
 |==========================================================================
-| RBAC:
-|   Manager    → View/Reports only  (blade hides add/edit/delete buttons)
-|   Supervisor → Full CRUD
-|   Secretary  → Full CRUD (including limited delete)
-|   Staff      → Full CRUD (including limited delete)
-|--------------------------------------------------------------------------
 */
 
 Route::middleware(['auth', 'role:Manager,Supervisor,Secretary,Staff'])->group(function () {
@@ -91,12 +81,6 @@ Route::middleware(['auth', 'role:Manager,Supervisor,Secretary,Staff'])->group(fu
 |==========================================================================
 | LEASES
 |==========================================================================
-| RBAC:
-|   Manager    → Full CRUD
-|   Supervisor → Full CRUD
-|   Secretary  → View/Prepare only (blade hides add/edit/delete buttons)
-|   Staff      → View only         (blade hides all action buttons)
-|--------------------------------------------------------------------------
 */
 
 Route::middleware(['auth', 'role:Manager,Supervisor,Secretary,Staff'])->group(function () {
@@ -107,29 +91,18 @@ Route::middleware(['auth', 'role:Manager,Supervisor,Secretary,Staff'])->group(fu
 |==========================================================================
 | PROPERTY MODULE
 |==========================================================================
-| RBAC:
-|   Manager    → View/Approve only  (no add/edit/delete buttons in blade)
-|   Supervisor → Full CRUD
-|   Secretary  → Add/Edit/View      (no delete button in blade)
-|   Staff      → View Assigned only
-|--------------------------------------------------------------------------
 */
 
-// VIEW — All roles can see the property list page
 Route::middleware(['auth', 'role:Manager,Supervisor,Secretary,Staff'])->group(function () {
 
     Route::get('/properties', [PropertyController::class, 'webIndex'])
         ->name('properties.index');
 
-    // ⚠️ /properties/search must be defined BEFORE /properties/{id}
-    //    to avoid route conflict.
     Route::get('/properties/search', function () {
         return view('properties.search');
     })->name('properties.search');
 });
 
-// CREATE & EDIT — Supervisor and Secretary
-// RBAC: Manager ❌, Staff ❌
 Route::middleware(['auth', 'role:Supervisor,Secretary'])->group(function () {
     Route::post('/properties',     [PropertyController::class, 'store'])
         ->name('properties.store');
@@ -137,8 +110,6 @@ Route::middleware(['auth', 'role:Supervisor,Secretary'])->group(function () {
         ->name('properties.update');
 });
 
-// DELETE — Supervisor ONLY
-// RBAC: Manager ❌, Secretary ✔ Limited (no delete per property RBAC row), Staff ❌
 Route::middleware(['auth', 'role:Supervisor'])->group(function () {
     Route::delete('/properties/{id}', [PropertyController::class, 'destroy'])
         ->name('properties.destroy');
@@ -148,54 +119,34 @@ Route::middleware(['auth', 'role:Supervisor'])->group(function () {
 |==========================================================================
 | RENTER / CLIENT MODULE
 |==========================================================================
-| RBAC:
-|   Manager    → View only
-|   Supervisor → Full CRUD
-|   Secretary  → Full CRUD (Add/Edit/Delete)
-|   Staff      → View only + Add Only (Create Renter per RBAC)
-|--------------------------------------------------------------------------
 */
 
 Route::prefix('renter')->middleware(['auth'])->group(function () {
 
-    // VIEW — All roles
+    // ── STATIC & SUB-ROUTES FIRST ──────────────────────────────
     Route::middleware('role:Manager,Supervisor,Secretary,Staff')->group(function () {
-
-        Route::get('/', [RenterController::class, 'index'])
-            ->name('renter.index');
-
+        Route::get('/', [RenterController::class, 'index'])->name('renter.index');
         Route::get('/search', function () {
             return view('renter.search');
         })->name('renter.search');
-
-        // ⚠️ /{id} must come AFTER named sub-routes like /create and /search
-        Route::get('/{id}', [RenterController::class, 'show'])
-            ->name('renter.show');
     });
 
-    // CREATE — Supervisor, Secretary, Staff
-    // RBAC: Staff = Add Only ✔, Manager ❌
+    // /create must come before /{id}
     Route::middleware('role:Supervisor,Secretary,Staff')->group(function () {
-        Route::get('/create', [RenterController::class, 'create'])
-            ->name('renter.create');
-        Route::post('/', [RenterController::class, 'store'])
-            ->name('renter.store');
+        Route::get('/create', [RenterController::class, 'create'])->name('renter.create');
+        Route::post('/', [RenterController::class, 'store'])->name('renter.store');
     });
 
-    // EDIT — Supervisor and Secretary only
-    // RBAC: Staff ❌, Manager ❌
+    // /{id}/edit must come before /{id}
     Route::middleware('role:Supervisor,Secretary')->group(function () {
-        Route::get('/{id}/edit', [RenterController::class, 'edit'])
-            ->name('renter.edit');
-        Route::put('/{id}', [RenterController::class, 'update'])
-            ->name('renter.update');
+        Route::get('/{id}/edit', [RenterController::class, 'edit'])->name('renter.edit');
+        Route::put('/{id}', [RenterController::class, 'update'])->name('renter.update');
+        Route::delete('/{id}', [RenterController::class, 'destroy'])->name('renter.destroy');
     });
 
-    // DELETE — Supervisor and Secretary (both Full per RBAC)
-    // RBAC: Manager ❌, Staff ❌
-    Route::middleware('role:Supervisor,Secretary')->group(function () {
-        Route::delete('/{id}', [RenterController::class, 'destroy'])
-            ->name('renter.destroy');
+    // ── DYNAMIC CATCH-ALL LAST ─────────────────────────────────
+    Route::middleware('role:Manager,Supervisor,Secretary,Staff')->group(function () {
+        Route::get('/{id}', [RenterController::class, 'show'])->name('renter.show');
     });
 });
 
@@ -203,24 +154,15 @@ Route::prefix('renter')->middleware(['auth'])->group(function () {
 |==========================================================================
 | OWNER MODULE
 |==========================================================================
-| RBAC:
-|   Manager    → View only
-|   Supervisor → Full CRUD
-|   Secretary  → Full CRUD (Add/Edit/Delete per RBAC)
-|   Staff      → No Access ❌
-|--------------------------------------------------------------------------
 */
 
 Route::prefix('owners')->middleware(['auth'])->group(function () {
 
-    // VIEW — Manager, Supervisor, Secretary (Staff has NO access)
     Route::middleware('role:Manager,Supervisor,Secretary')->group(function () {
         Route::get('/',     [OwnerController::class, 'index'])->name('owners.index');
         Route::get('/{id}', [OwnerController::class, 'show'])->name('owners.show');
     });
 
-    // FULL CRUD — Supervisor and Secretary
-    // RBAC: Manager ❌ create/edit/delete
     Route::middleware('role:Supervisor,Secretary')->group(function () {
         Route::get('/create',    [OwnerController::class, 'create'])->name('owners.create');
         Route::post('/',         [OwnerController::class, 'store'])->name('owners.store');
@@ -234,66 +176,34 @@ Route::prefix('owners')->middleware(['auth'])->group(function () {
 |==========================================================================
 | BRANCH MANAGEMENT
 |==========================================================================
-| RBAC:
-|   Manager    → Full CRUD + Reports
-|   Supervisor → View only
-|   Secretary  → View only
-|   Staff      → View only (needed for branch context in their forms)
-|--------------------------------------------------------------------------
-|
-| ⚠️ FIX: RBAC lists Staff as 👁 View for Branch List and Branch Details.
-|         Original routes excluded Staff from branch web pages.
-|         Staff added to VIEW group so their branch context pages work.
-|--------------------------------------------------------------------------
 */
-
-// VIEW — Manager, Supervisor, Secretary, Staff
-/*
-|--------------------------------------------------------------------------
-| BRANCH MANAGEMENT
-|--------------------------------------------------------------------------
-*/
-
-// =========================================================
-// VIEW — Manager, Supervisor, Secretary, Staff
-// =========================================================
 
 Route::middleware(['auth', 'role:Manager,Supervisor,Secretary,Staff'])
     ->prefix('branches')
     ->name('branch.')
     ->group(function () {
 
-        // STATIC ROUTES FIRST
         Route::get('/', [BranchOfficeController::class, 'index'])
             ->name('index');
 
-        // MANAGER PAGES
         Route::middleware('role:Manager')->group(function () {
-
             Route::get('/create', [BranchOfficeController::class, 'create'])
                 ->name('create');
         });
 
-        // DYNAMIC SUB-ROUTES
         Route::get('/{branchOffice}/data', [BranchOfficeController::class, 'apiShow']);
 
         Route::get('/{branchOffice}/staff', [BranchOfficeController::class, 'staffPage'])
             ->name('staff');
 
         Route::middleware('role:Manager')->group(function () {
-
             Route::get('/{branchOffice}/edit', [BranchOfficeController::class, 'edit'])
                 ->name('edit');
         });
 
-        // MAIN SHOW ROUTE LAST
         Route::get('/{branchOffice}', [BranchOfficeController::class, 'showPage'])
             ->name('show');
     });
-
-// =========================================================
-// CRUD — Manager ONLY
-// =========================================================
 
 Route::middleware(['auth', 'role:Manager'])
     ->prefix('branches')
@@ -314,36 +224,13 @@ Route::middleware(['auth', 'role:Manager'])
 |==========================================================================
 | STAFF MODULE
 |==========================================================================
-| RBAC:
-|   Manager    → Full CRUD
-|   Supervisor → View Supervised Team (own branch, enforced in controller)
-|   Secretary  → View Only
-|   Staff      → View Own Profile only (enforced in controller)
-|--------------------------------------------------------------------------
-|
-| ⚠️ FIX: RBAC lists Staff as 👁 View Own Profile.
-|         Original routes excluded Staff entirely from staff web pages.
-|         Staff added to VIEW group; controller enforces own-profile-only scope.
-|--------------------------------------------------------------------------
 */
-
-// VIEW — Manager, Supervisor, Secretary, Staff
-/*
-|--------------------------------------------------------------------------
-| STAFF MODULE
-|--------------------------------------------------------------------------
-*/
-
-// =====================================================
-// VIEW — Manager, Supervisor, Secretary, Staff
-// =====================================================
 
 Route::middleware(['auth', 'role:Manager,Supervisor,Secretary,Staff'])
     ->prefix('staff')
     ->name('staff.')
     ->group(function () {
 
-        // STATIC ROUTES FIRST
         Route::get('/', [StaffController::class, 'index'])
             ->name('index');
 
@@ -353,34 +240,22 @@ Route::middleware(['auth', 'role:Manager,Supervisor,Secretary,Staff'])
         Route::get('/branch/{branchNo}/report', [StaffController::class, 'branchReport'])
             ->name('branch.report');
 
-        // MANAGER ONLY ROUTES
         Route::middleware('role:Manager')->group(function () {
-
             Route::get('/create', [StaffController::class, 'create'])
                 ->name('create');
-            
-            Route::put('/api/staff/{id}', [StaffController::class, 'update']);
-
         });
 
-        // DYNAMIC SUB-ROUTES
         Route::get('/{id}/subordinates', [StaffController::class, 'subordinates'])
             ->name('subordinates');
 
         Route::middleware('role:Manager')->group(function () {
-
             Route::get('/{id}/edit', [StaffController::class, 'edit'])
                 ->name('edit');
         });
 
-        // MAIN DYNAMIC ROUTE LAST
         Route::get('/{id}', [StaffController::class, 'showPage'])
             ->name('show');
     });
-
-// =====================================================
-// FULL CRUD — Manager ONLY
-// =====================================================
 
 Route::middleware(['auth', 'role:Manager'])
     ->prefix('staff')
@@ -402,43 +277,180 @@ Route::middleware(['auth', 'role:Manager'])
 
 /*
 |==========================================================================
-| STAFF & DROPDOWN API HELPERS (web-accessible via JS fetch)
+| WEB-ACCESSIBLE API HELPERS (called via JS fetch using session auth)
 |==========================================================================
-| These routes mirror the API routes but sit in web.php because
-| the forms (blade views) call them via fetch() using session auth.
 |
-| ⚠️ FIX: Staff role needs /api/branches/{branch_no}/staff for the staff
-|         dropdown when creating a renter (Staff = Add Only per RBAC).
-|         Opening /api/branch staff helper to all roles that create renters.
-|
-| ⚠️ FIX: Staff web pages for branches and staff profile need branch/staff
-|         API helpers for JS calls — added Staff where appropriate below.
+| These mirror the api.php routes but live in web.php so that blade
+| views can call them via fetch() using cookie/session authentication
+| instead of token auth (which api.php requires).
 |--------------------------------------------------------------------------
 */
 
-// Manager, Supervisor, Secretary — staff list and supervisor helpers
-// (Staff cannot view full staff lists; they see own profile only via controller scope)
+// -----------------------------------------------------------------------
+// STAFF API HELPERS — READ (Manager, Supervisor, Secretary)
+// -----------------------------------------------------------------------
 Route::middleware(['auth', 'role:Manager,Supervisor,Secretary'])->group(function () {
 
     Route::get('/api/staff', [StaffController::class, 'apiIndex']);
 
+    // ⚠️ /supervisors-for-branch MUST come BEFORE /api/staff/{id}
+    //    to avoid Laravel matching "supervisors-for-branch" as an {id}
+    Route::get('/api/staff/supervisors-for-branch', [StaffController::class, 'getSupervisors']);
+
     Route::get('/api/staff/{id}', [StaffController::class, 'apiShow']);
 
-    // supervisors-for-branch: used in staff create/edit form (Manager creates staff,
-    // but endpoint safely exposed to Manager+Supervisor+Secretary for dropdown use)
     Route::get('/api/supervisors', [StaffController::class, 'getSupervisors']);
-
-    Route::get('/api/staff/supervisors-for-branch', [StaffController::class, 'getSupervisors']);
 
     Route::get('/api/branch/{branchNo}/staff-count', [StaffController::class, 'staffCountByBranch']);
 
     Route::get('/api/supervisor/{supervisorNo}/count', [StaffController::class, 'supervisorStaffCount']);
 });
 
-// Staff also needs the branch staff endpoint to populate the assigned staff
-// dropdown when creating a renter (Staff = Add Only per RBAC).
-// This is intentionally separate and scoped to the minimum needed.
+// -----------------------------------------------------------------------
+// STAFF API HELPERS — WRITE (Manager only)
+// -----------------------------------------------------------------------
+Route::middleware(['auth', 'role:Manager'])->group(function () {
+
+    Route::post('/api/staff',                    [StaffController::class, 'store']);
+    Route::put('/api/staff/{id}',                [StaffController::class, 'update']);
+    Route::delete('/api/staff/{id}',             [StaffController::class, 'destroy']);
+    Route::post('/api/staff/{id}/assign-branch', [StaffController::class, 'assignToBranch']);
+});
+
+// -----------------------------------------------------------------------
+// BRANCH STAFF HELPER — All roles that create renters need this
+// -----------------------------------------------------------------------
 Route::middleware(['auth', 'role:Manager,Supervisor,Secretary,Staff'])->group(function () {
 
     Route::get('/api/branches/{branch_no}/staff', [BranchOfficeController::class, 'getStaff']);
+});
+
+// -----------------------------------------------------------------------
+// VIEWINGS API HELPERS — READ (all roles)
+// -----------------------------------------------------------------------
+Route::middleware(['auth', 'role:Manager,Supervisor,Secretary,Staff'])->group(function () {
+
+    Route::get('/api/viewings', [ViewingController::class, 'index']);
+
+    // ⚠️ /form-data MUST come BEFORE the composite /{property_no}/{renter_no}/{viewing_date}
+    //    route to avoid Laravel treating "form-data" as a {property_no} parameter
+    Route::get('/api/viewings/form-data', [ViewingController::class, 'formData']);
+
+    Route::get('/api/viewings/property/{property_no}', [ViewingController::class, 'byProperty']);
+
+    Route::get('/api/viewings/{property_no}/{renter_no}/{viewing_date}', [ViewingController::class, 'show']);
+});
+
+// -----------------------------------------------------------------------
+// VIEWINGS API HELPERS — WRITE (Supervisor, Secretary, Staff)
+// Manager has no create/edit/delete on viewings per RBAC
+// -----------------------------------------------------------------------
+Route::middleware(['auth', 'role:Supervisor,Secretary,Staff'])->group(function () {
+
+    Route::post('/api/viewings', [ViewingController::class, 'store']);
+
+    Route::put('/api/viewings/{property_no}/{renter_no}/{viewing_date}',    [ViewingController::class, 'update']);
+
+    Route::delete('/api/viewings/{property_no}/{renter_no}/{viewing_date}', [ViewingController::class, 'destroy']);
+});
+
+// -----------------------------------------------------------------------
+// LEASES API HELPERS — READ (all roles)
+// -----------------------------------------------------------------------
+Route::middleware(['auth', 'role:Manager,Supervisor,Secretary,Staff'])->group(function () {
+
+    Route::get('/api/leases', [LeaseController::class, 'index']);
+
+    // ⚠️ /form-data MUST come BEFORE /{lease_no} to avoid route conflict
+    Route::get('/api/leases/form-data', [LeaseController::class, 'formData']);
+
+    Route::get('/api/leases/property/{property_no}', [LeaseController::class, 'byProperty']);
+
+    Route::get('/api/leases/{lease_no}', [LeaseController::class, 'show']);
+});
+
+// -----------------------------------------------------------------------
+// LEASES API HELPERS — WRITE (Manager and Supervisor only)
+// Secretary and Staff have no create/edit/delete on leases per RBAC
+// -----------------------------------------------------------------------
+Route::middleware(['auth', 'role:Manager,Supervisor'])->group(function () {
+
+    Route::post('/api/leases',             [LeaseController::class, 'store']);
+    Route::put('/api/leases/{lease_no}',   [LeaseController::class, 'update']);
+    Route::delete('/api/leases/{lease_no}',[LeaseController::class, 'destroy']);
+});
+
+// -----------------------------------------------------------------------
+// RENTERS API HELPERS — READ (all roles)
+// -----------------------------------------------------------------------
+Route::middleware(['auth', 'role:Manager,Supervisor,Secretary,Staff'])->group(function () {
+
+    Route::get('/api/renters',          [RenterController::class, 'apiIndex']);
+    Route::get('/api/renters/{id}',     [RenterController::class, 'show']);
+    Route::get('/api/renters/{id}/staff', [RenterController::class, 'getRenterStaff']);
+    Route::get('/api/renters/{id}/logs',  [RenterController::class, 'getLogs']);
+});
+
+// -----------------------------------------------------------------------
+// RENTERS API HELPERS — WRITE (Supervisor and Secretary only)
+// Manager and Staff have no create/edit/delete on renters via API per RBAC
+// -----------------------------------------------------------------------
+Route::middleware(['auth', 'role:Supervisor,Secretary'])->group(function () {
+
+    Route::post('/api/renters',              [RenterController::class, 'store']);
+    Route::put('/api/renters/{id}',          [RenterController::class, 'update']);
+    Route::delete('/api/renters/{id}',       [RenterController::class, 'destroy']);
+    Route::post('/api/renters/{id}/assign-staff', [RenterController::class, 'assignStaff']);
+});
+
+// -----------------------------------------------------------------------
+// PROPERTIES API HELPERS — READ (all roles)
+// -----------------------------------------------------------------------
+Route::middleware(['auth', 'role:Manager,Supervisor,Secretary,Staff'])->group(function () {
+
+    Route::get('/api/properties',         [PropertyController::class, 'index']);
+
+    // ⚠️ /search MUST come BEFORE /{id} to avoid route conflict
+    Route::get('/api/properties/search',  [PropertyController::class, 'search']);
+    Route::get('/api/properties/renters', [PropertyController::class, 'renters']);
+    Route::get('/api/properties/staff',   [PropertyController::class, 'staff']);
+
+    Route::get('/api/properties/{id}',    [PropertyController::class, 'show']);
+});
+
+// -----------------------------------------------------------------------
+// PROPERTIES API HELPERS — WRITE (Supervisor and Secretary)
+// -----------------------------------------------------------------------
+Route::middleware(['auth', 'role:Supervisor,Secretary'])->group(function () {
+
+    Route::post('/api/properties',            [PropertyController::class, 'store']);
+    Route::put('/api/properties/{id}',        [PropertyController::class, 'update']);
+    Route::patch('/api/properties/{id}/status',[PropertyController::class, 'updateStatus']);
+});
+
+// -----------------------------------------------------------------------
+// PROPERTIES API HELPERS — DELETE (Supervisor only)
+// -----------------------------------------------------------------------
+Route::middleware(['auth', 'role:Supervisor'])->group(function () {
+
+    Route::delete('/api/properties/{id}', [PropertyController::class, 'destroy']);
+});
+
+// -----------------------------------------------------------------------
+// BRANCHES API HELPERS — READ (all roles)
+// -----------------------------------------------------------------------
+Route::middleware(['auth', 'role:Manager,Supervisor,Secretary,Staff'])->group(function () {
+
+    Route::get('/api/branches',            [BranchOfficeController::class, 'apiIndex']);
+    Route::get('/api/branches/{branchOffice}/staff-count', [BranchOfficeController::class, 'staffCount']);
+    Route::get('/api/branches/{branchOffice}/manager',     [BranchOfficeController::class, 'manager']);
+    Route::get('/api/branches/{branchOffice}',             [BranchOfficeController::class, 'apiShow']);
+});
+
+// WRITE — Manager only
+Route::middleware(['auth', 'role:Manager'])->group(function () {
+
+    Route::post('/api/branches',                [BranchOfficeController::class, 'store']);
+    Route::put('/api/branches/{branchOffice}',  [BranchOfficeController::class, 'update']);
+    Route::delete('/api/branches/{branchOffice}',[BranchOfficeController::class, 'destroy']);
 });
