@@ -94,33 +94,72 @@
 </div>
 
 <script>
+
 async function deleteBranch(branchId, btn) {
-    if (!confirm('Delete this branch? This cannot be undone.')) return;
+
+    if (!confirm('Delete this branch? This cannot be undone.')) {
+        return;
+    }
+
     btn.disabled = true;
     btn.textContent = 'Deleting...';
+
     try {
-        const response = await fetch(`/api/branches/${branchId}`, {
+
+        // ✅ FIXED: use WEB route instead of API route
+        const response = await fetch(`/branches/${branchId}`, {
+
             method: 'DELETE',
+
+            credentials: 'same-origin',
+
             headers: {
                 'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute('content')
             }
+
         });
-        const result = await response.json();
-        if (!result.success) {
-            alert(result.message || 'Could not delete branch.');
+
+        let result = {};
+
+        try {
+            result = await response.json();
+        } catch (e) {
+            console.warn('Non-JSON response received.');
+        }
+
+        if (!response.ok) {
+
+            alert(
+                result.message ||
+                result.error ||
+                'Could not delete branch.'
+            );
+
             btn.disabled = false;
             btn.textContent = 'Delete';
+
             return;
         }
+
+        // Remove row from table
         btn.closest('tr').remove();
+
+        alert('Branch deleted successfully.');
+
     } catch (error) {
+
         console.error(error);
+
         alert('Something went wrong.');
+
         btn.disabled = false;
         btn.textContent = 'Delete';
     }
 }
+
 </script>
 
 @endsection

@@ -1,4 +1,5 @@
 @extends('layouts.app')
+
 @section('content')
 
 <link rel="stylesheet" href="{{ asset('css/style.css') }}">
@@ -11,7 +12,11 @@
 </div>
 
 <div class="form-card">
+
     <form id="createBranchForm">
+
+        @csrf
+
         <div class="form-grid">
 
             <div class="form-group">
@@ -47,49 +52,83 @@
         </div>
 
         <div class="form-actions">
-            <a href="/branches" class="cancel-btn">Cancel</a>
-            <button type="submit" class="submit-btn">Create Branch</button>
+            <a href="{{ route('branch.index') }}" class="cancel-btn">
+                Cancel
+            </a>
+
+            <button type="submit" class="submit-btn">
+                Create Branch
+            </button>
         </div>
+
     </form>
+
 </div>
 
 <script>
 document.getElementById('createBranchForm').addEventListener('submit', async function (e) {
+
     e.preventDefault();
 
     const payload = {
-        street:       document.getElementById('street').value,
-        area:         document.getElementById('area').value,
-        city:         document.getElementById('city').value,
-        postcode:     document.getElementById('postcode').value,
+        street: document.getElementById('street').value,
+        area: document.getElementById('area').value,
+        city: document.getElementById('city').value,
+        postcode: document.getElementById('postcode').value,
         telephone_no: document.getElementById('telephone_no').value,
-        fax_no:       document.getElementById('fax_no').value,
+        fax_no: document.getElementById('fax_no').value,
     };
 
     try {
-        const response = await fetch('/api/branches', {
+
+        // ✅ FIXED: use WEB route instead of API route
+        const response = await fetch('/branches', {
+
             method: 'POST',
+
+            credentials: 'same-origin',
+
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute('content'),
             },
-            body: JSON.stringify(payload)
+
+            body: JSON.stringify(payload),
         });
 
-        const result = await response.json();
+        let result = {};
+
+        try {
+            result = await response.json();
+        } catch (e) {
+            console.warn('Non-JSON response received.');
+        }
 
         if (!response.ok) {
-            alert(result.message || 'Failed');
+
+            console.error(result);
+
+            alert(
+                result.message ||
+                result.error ||
+                'Failed to create branch.'
+            );
+
             return;
         }
 
-        alert('Branch created successfully');
+        alert('Branch created successfully.');
+
         window.location.href = '/branches';
 
     } catch (error) {
+
         console.error(error);
-        alert('Something went wrong.');
+
+        alert('Something went wrong while creating the branch.');
     }
 });
 </script>

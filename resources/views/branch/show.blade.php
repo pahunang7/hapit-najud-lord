@@ -37,7 +37,20 @@ function formatStaffNo(no) {
 
 async function loadBranch() {
     try {
-        const response = await fetch(`/api/branches/${branchId}`);
+        const response = await fetch(`/branches/${branchId}/data`, {
+    method: 'GET',
+    credentials: 'same-origin',
+    headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+    }
+});
+
+        // ❗ IMPORTANT: handle HTTP errors properly
+        if (!response.ok) {
+            throw new Error(`HTTP error ${response.status}`);
+        }
+
         const result = await response.json();
 
         const container = document.getElementById('branchContainer');
@@ -68,7 +81,8 @@ async function loadBranch() {
 
                 <p><strong>Manager:</strong>
                     ${data.manager
-                        ? formatStaffNo(data.manager.staff_no) + ' — ' + data.manager.first_name + ' ' + data.manager.last_name
+                        ? formatStaffNo(data.manager.staff_no) + ' — ' +
+                          data.manager.first_name + ' ' + data.manager.last_name
                         : 'No Manager Assigned'}
                 </p>
 
@@ -86,8 +100,9 @@ async function loadBranch() {
         `;
 
     } catch (error) {
-        console.error(error);
-        document.getElementById('branchContainer').innerHTML = "Error loading branch details";
+        console.error("Branch load error:", error);
+        document.getElementById('branchContainer').innerHTML =
+            "Error loading branch details";
     }
 }
 

@@ -116,7 +116,6 @@
 
             <div class="form-group">
                 <label>Property Type</label>
-
                 <select name="property_type" required>
                     <option value="Flat">Flat</option>
                     <option value="House">House</option>
@@ -136,45 +135,30 @@
 
             <div class="form-group">
                 <label>Owner</label>
-
                 <select name="owner_no" required>
-
                     <option value="">Select Owner</option>
-
                     @foreach($owners as $owner)
                         <option value="{{ $owner->owner_no }}">
                             {{ $owner->owner_no }} - {{ $owner->full_name }}
                         </option>
                     @endforeach
-
                 </select>
             </div>
 
             <div class="form-group">
                 <label>Branch</label>
-
                 <select name="branch_no" id="branchSelect" required>
-
                     <option value="">Select Branch</option>
-
                     @foreach($branches as $branch)
-
                         <option value="{{ $branch->branch_no }}">
-
-                            Branch #{{ $branch->branch_no }}
-                            —
-                            {{ $branch->city }}
-
+                            Branch #{{ $branch->branch_no }} — {{ $branch->city }}
                         </option>
-
                     @endforeach
-
                 </select>
             </div>
 
             <div class="form-group">
                 <label>Staff</label>
-
                 <select name="staff_no" id="staffSelect" required>
                     <option value="">Select a branch first</option>
                 </select>
@@ -198,15 +182,20 @@ function closeModal() {
     document.getElementById('propertyModal').style.display = 'none';
 }
 
-window.onclick = function(event) {
+window.onclick = function (event) {
     const modal = document.getElementById('propertyModal');
-    if (event.target == modal) {
-        closeModal();
-    }
-}
+    if (event.target === modal) closeModal();
+};
 
-document.getElementById('branchSelect').addEventListener('change', function () {
-    const branchNo = this.value;
+/* =========================================================
+   LOAD STAFF ON BRANCH CHANGE
+   Endpoint: /api/branches/{branchNo}/staff
+   BranchOfficeController::getStaff returns a plain array.
+   We guard against {data:[]} shape too just in case.
+========================================================= */
+document.getElementById('branchSelect').addEventListener('change', async function () {
+
+    const branchNo    = this.value;
     const staffSelect = document.getElementById('staffSelect');
 
     staffSelect.innerHTML = '<option value="">Loading...</option>';
@@ -216,26 +205,46 @@ document.getElementById('branchSelect').addEventListener('change', function () {
         return;
     }
 
-    fetch(`/api/branches/${branchNo}/staff`)
-        .then(res => res.json())
-        .then(data => {
-            staffSelect.innerHTML = '<option value="">Select Staff</option>';
-
-            if (data.length === 0) {
-                staffSelect.innerHTML = '<option value="">No staff found for this branch</option>';
-                return;
-            }
-
-            data.forEach(staff => {
-                const option = document.createElement('option');
-                option.value = staff.staff_no;
-                option.textContent = `${staff.staff_no} - ${staff.full_name}`;
-                staffSelect.appendChild(option);
-            });
-        })
-        .catch(() => {
-            staffSelect.innerHTML = '<option value="">Failed to load staff</option>';
+    try {
+        const response = await fetch(`/api/branches/${branchNo}/staff`, {
+            credentials: 'same-origin',
+            headers: {
+                'Accept':            'application/json',
+                'X-Requested-With':  'XMLHttpRequest',
+            },
         });
+
+        if (!response.ok) {
+            staffSelect.innerHTML = '<option value="">Failed to load staff</option>';
+            return;
+        }
+
+        const result = await response.json();
+
+        // getStaff returns a plain array; guard against {data:[]} shape too
+        const staff = Array.isArray(result) ? result : (result.data ?? []);
+
+        if (staff.length === 0) {
+            staffSelect.innerHTML = '<option value="">No staff found for this branch</option>';
+            return;
+        }
+
+        staffSelect.innerHTML = '<option value="">Select Staff</option>';
+
+        staff.forEach(member => {
+            const staffName = member.full_name
+                ?? (member.first_name + ' ' + member.last_name);
+
+            const option       = document.createElement('option');
+            option.value       = member.staff_no;
+            option.textContent = `${member.staff_no} - ${staffName}`;
+            staffSelect.appendChild(option);
+        });
+
+    } catch (err) {
+        console.error('Failed to load staff:', err);
+        staffSelect.innerHTML = '<option value="">Failed to load staff</option>';
+    }
 });
 
 </script>

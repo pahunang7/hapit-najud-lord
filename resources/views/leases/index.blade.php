@@ -19,8 +19,7 @@
             onkeyup="loadLeases()"
         >
 
-        <button class="add-btn"
-                onclick="openLeaseModal()">
+        <button class="add-btn" onclick="openLeaseModal()">
             + Add Lease
         </button>
 
@@ -77,11 +76,11 @@
                    required>
 
             <input type="number"
-       placeholder="Deposit"
-       id="deposit"
-       min="0"
-       step="0.01"
-       required>
+                   placeholder="Deposit"
+                   id="deposit"
+                   min="0"
+                   step="0.01"
+                   required>
 
             <!-- Deposit Paid -->
             <select id="deposit_paid" required>
@@ -117,8 +116,7 @@
 
             <button type="submit">Create</button>
 
-            <button type="button"
-                    onclick="closeLeaseModal()">
+            <button type="button" onclick="closeLeaseModal()">
                 Cancel
             </button>
 
@@ -137,13 +135,11 @@
 
         <div class="modal-actions">
 
-            <button class="btn-delete"
-                    onclick="confirmDelete()">
+            <button class="btn-delete" onclick="confirmDelete()">
                 Delete
             </button>
 
-            <button class="btn-cancel"
-                    onclick="closeDeleteModal()">
+            <button class="btn-cancel" onclick="closeDeleteModal()">
                 Cancel
             </button>
 
@@ -158,523 +154,290 @@ let deleteId = null;
 // ================= LOAD TABLE =================
 function loadLeases() {
 
-    let search =
-        document.getElementById('leaseSearch')?.value || '';
+    const search = document.getElementById('leaseSearch')?.value || '';
 
-    fetch(`/api/leases?search=${encodeURIComponent(search)}`)
-
+    fetch(`/api/leases?search=${encodeURIComponent(search)}`, {
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' },
+    })
     .then(res => res.json())
-
     .then(data => {
 
-        console.log("API RESPONSE:", data);
-
-        let tbody = document.querySelector('#leasesTable tbody');
-
+        const tbody = document.querySelector('#leasesTable tbody');
         tbody.innerHTML = '';
 
         if (!data.data || data.data.length === 0) {
-
-            tbody.innerHTML =
-                `<tr><td colspan="11">No data found</td></tr>`;
-
+            tbody.innerHTML = `<tr><td colspan="11">No data found</td></tr>`;
             return;
         }
 
         data.data.forEach(l => {
 
-            let row = `
+            const row = `
             <tr>
-
                 <td>${l.lease_no ?? ''}</td>
-
+                <td>${l.property_no ?? ''} - ${l.property_address ?? ''}</td>
+                <td>${l.renter_no   ?? ''} - ${l.renter_name    ?? ''}</td>
+                <td>${l.staff_no    ?? ''} - ${l.staff_name     ?? ''}</td>
+                <td>${l.start_date  ?? ''}</td>
+                <td>${l.end_date    ?? ''}</td>
+                <td>${l.duration    ?? ''}</td>
+                <td>${l.deposit     ?? ''}</td>
+                <td>${l.deposit_paid    ?? ''}</td>
+                <td>${l.payment_method  ?? ''}</td>
                 <td>
-                    ${l.property_no ?? ''} -
-                    ${l.property_address ?? ''}
+                    <button class="table-btne" onclick="editLease(${l.lease_no})">Edit</button>
+                    <button class="table-btnd" onclick="openDeleteModal(${l.lease_no})">Delete</button>
                 </td>
-
-                <td>
-                    ${l.renter_no ?? ''} -
-                    ${l.renter_name ?? ''}
-                </td>
-
-                <td>
-                    ${l.staff_no ?? ''} -
-                    ${l.staff_name ?? ''}
-                </td>
-
-                <td>${l.start_date ?? ''}</td>
-
-                <td>${l.end_date ?? ''}</td>
-
-                <td>${l.duration ?? ''}</td>
-
-                <td>${l.deposit ?? ''}</td>
-
-                <td>${l.deposit_paid ?? ''}</td>
-
-                <td>${l.payment_method ?? ''}</td>
-
-                <td>
-
-                    <button class="table-btne"
-                            onclick="editLease(${l.lease_no})">
-                        Edit
-                    </button>
-
-                    <button class="table-btnd"
-                            onclick="openDeleteModal(${l.lease_no})">
-                        Delete
-                    </button>
-
-                </td>
-
             </tr>
             `;
 
             tbody.innerHTML += row;
         });
     })
-
-    .catch(err => {
-        console.log("FETCH ERROR:", err);
-    });
-}
-
-
-async function loadRenters() {
-
-    const response = await fetch(
-        `/api/renters`
-    );
-
-    const result = await response.json();
-
-    const staff = result.data;
-
-    const staffSelect =
-        document.getElementById('renter_no');
-
-    staffSelect.innerHTML = `
-        <option value="">
-            Select Renter
-        </option>
-    `;
-
-    staff.forEach(member => {
-
-        staffSelect.innerHTML += `
-            <option value="${member.staff_no}">
-                ${member.full_name}
-            </option>
-        `;
-
-    });
-
+    .catch(err => console.error('FETCH ERROR:', err));
 }
 
 // ================= LOAD DROPDOWNS =================
+// loadFormData() fetches /api/leases/form-data which returns properties,
+// renters, and staff all in one call — this is the only dropdown loader needed.
+// The old separate loadRenters() function used the wrong field (member.staff_no)
+// and has been removed; loadFormData() handles renters correctly.
 async function loadFormData() {
 
-    const res = await fetch('/api/leases/form-data');
+    try {
+        const res  = await fetch('/api/leases/form-data', {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' },
+        });
 
-    const data = await res.json();
+        if (!res.ok) {
+            console.error('Failed to load form data:', res.status);
+            return;
+        }
 
-    // PROPERTY
-    let propertySelect =
-        document.getElementById('property_no');
+        const data = await res.json();
 
-    propertySelect.innerHTML =
-        `<option value="">Select Property</option>`;
+        // PROPERTY
+        const propertySelect = document.getElementById('property_no');
+        propertySelect.innerHTML = `<option value="">Select Property</option>`;
 
-    data.properties.forEach(p => {
+        (data.properties ?? []).forEach(p => {
+            propertySelect.innerHTML += `
+                <option value="${p.property_no}">
+                    #${p.property_no} - ${p.property_type} - ${p.street}, ${p.city}
+                </option>
+            `;
+        });
 
-        propertySelect.innerHTML += `
-            <option value="${p.property_no}">
-                #${p.property_no}
-                -
-                ${p.property_type}
-                -
-                ${p.street}, ${p.city}
-            </option>
-        `;
-    });
+        // RENTER — use renter_no (not staff_no)
+        const renterSelect = document.getElementById('renter_no');
+        renterSelect.innerHTML = `<option value="">Select Renter</option>`;
 
-    // RENTER
-    let renterSelect =
-        document.getElementById('renter_no');
+        (data.renters ?? []).forEach(r => {
+            renterSelect.innerHTML += `
+                <option value="${r.renter_no}">
+                    #${r.renter_no} - ${r.renter_name}
+                </option>
+            `;
+        });
 
-    renterSelect.innerHTML =
-        `<option value="">Select Renter</option>`;
+        // STAFF — use staff_no
+        const staffSelect = document.getElementById('staff_no');
+        staffSelect.innerHTML = `<option value="">Select Staff</option>`;
 
-    data.renters.forEach(r => {
+        (data.staff ?? []).forEach(s => {
+            staffSelect.innerHTML += `
+                <option value="${s.staff_no}">
+                    #${s.staff_no} - ${s.staff_name}
+                </option>
+            `;
+        });
 
-        renterSelect.innerHTML += `
-            <option value="${r.renter_no}">
-                #${r.renter_no}
-                -
-                ${r.renter_name}
-            </option>
-        `;
-    });
-
-    // STAFF
-    let staffSelect =
-        document.getElementById('staff_no');
-
-    staffSelect.innerHTML =
-        `<option value="">Select Staff</option>`;
-
-    data.staff.forEach(s => {
-
-        staffSelect.innerHTML += `
-            <option value="${s.staff_no}">
-                #${s.staff_no}
-                -
-                ${s.staff_name}
-            </option>
-        `;
-    });
+    } catch (err) {
+        console.error('loadFormData error:', err);
+    }
 }
-
 
 // ================= OPEN MODAL =================
 function openLeaseModal() {
-
-    document.getElementById('leaseFormModal')
-        .style.display = 'flex';
+    document.getElementById('leaseFormModal').style.display = 'flex';
 }
-
 
 // ================= CLOSE MODAL =================
 function closeLeaseModal() {
-
-    document.getElementById('leaseFormModal')
-        .style.display = 'none';
-
+    document.getElementById('leaseFormModal').style.display = 'none';
     document.getElementById('leaseForm').reset();
-
     document.getElementById('editing_id').value = '';
-
     document.getElementById('lease_no').disabled = false;
-
-    document.getElementById('modalTitle')
-        .textContent = "Create Lease";
-
-    document.querySelector(
-        '#leaseForm button[type="submit"]'
-    ).textContent = "Create";
+    document.getElementById('modalTitle').textContent = 'Create Lease';
+    document.querySelector('#leaseForm button[type="submit"]').textContent = 'Create';
 }
-
 
 // ================= DELETE MODAL =================
 function openDeleteModal(id) {
-
     deleteId = id;
-
-    document.getElementById('deleteModal')
-        .style.display = 'flex';
+    document.getElementById('deleteModal').style.display = 'flex';
 }
 
 function closeDeleteModal() {
-
-    document.getElementById('deleteModal')
-        .style.display = 'none';
-
+    document.getElementById('deleteModal').style.display = 'none';
     deleteId = null;
 }
-
 
 // ================= DELETE =================
 function confirmDelete() {
 
     fetch(`/api/leases/${deleteId}`, {
-
         method: 'DELETE',
-
+        credentials: 'same-origin',
         headers: {
-            'X-CSRF-TOKEN':
-                document.querySelector(
-                    'meta[name="csrf-token"]'
-                ).content
-        }
-
+            'Accept':       'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        },
     })
-
+    .then(res => res.json())
     .then(() => {
-
         loadLeases();
-
-        showMessage("Lease deleted!");
-
+        showMessage('Lease deleted!');
         closeDeleteModal();
     })
-
-    .catch(() => {
-
-        showMessage("Delete failed", "error");
-    });
+    .catch(() => showMessage('Delete failed', 'error'));
 }
 
-
 // ================= CLICK OUTSIDE =================
-window.onclick = function(e) {
-
-    const leaseModal =
-        document.getElementById('leaseFormModal');
-
-    const deleteModal =
-        document.getElementById('deleteModal');
-
-    if (e.target === leaseModal)
-        closeLeaseModal();
-
-    if (e.target === deleteModal)
-        closeDeleteModal();
+window.onclick = function (e) {
+    if (e.target === document.getElementById('leaseFormModal')) closeLeaseModal();
+    if (e.target === document.getElementById('deleteModal'))    closeDeleteModal();
 };
 
-
 // ================= SUBMIT =================
-document.getElementById('leaseForm')
-.addEventListener('submit', function(e) {
+document.getElementById('leaseForm').addEventListener('submit', function (e) {
 
     e.preventDefault();
 
-    let id =
-        document.getElementById('editing_id').value;
+    const id     = document.getElementById('editing_id').value;
+    const url    = id ? `/api/leases/${id}` : '/api/leases';
+    const method = id ? 'PUT' : 'POST';
 
-    let url = '/api/leases';
-
-    let method = 'POST';
-
-    if (id) {
-
-        url = `/api/leases/${id}`;
-
-        method = 'PUT';
-    }
-
-    let data = {
-
-        start_date:
-            document.getElementById('start_date').value,
-
-        end_date:
-            document.getElementById('end_date').value,
-
-        deposit:
-            document.getElementById('deposit').value,
-
-        deposit_paid:
-            document.getElementById('deposit_paid').value,
-
-        payment_method:
-            document.getElementById('payment_method').value,
-
-        property_no:
-            document.getElementById('property_no').value,
-
-        renter_no:
-            document.getElementById('renter_no').value,
-
-        staff_no:
-            document.getElementById('staff_no').value
+    const data = {
+        start_date:     document.getElementById('start_date').value,
+        end_date:       document.getElementById('end_date').value,
+        deposit:        document.getElementById('deposit').value,
+        deposit_paid:   document.getElementById('deposit_paid').value,
+        payment_method: document.getElementById('payment_method').value,
+        property_no:    document.getElementById('property_no').value,
+        renter_no:      document.getElementById('renter_no').value,
+        staff_no:       document.getElementById('staff_no').value,
     };
 
     if (!id) {
-
-        data.lease_no =
-            document.getElementById('lease_no').value;
+        data.lease_no = document.getElementById('lease_no').value;
     }
 
     if (parseFloat(data.deposit) <= 0) {
-
-    showMessage(
-        "Deposit cannot be negative",
-        "error"
-    );
-
-    return;
-}
+        showMessage('Deposit cannot be negative', 'error');
+        return;
+    }
 
     fetch(url, {
-
-        method: method,
-
+        method:      method,
+        credentials: 'same-origin',
         headers: {
-
             'Content-Type': 'application/json',
-
-            'Accept': 'application/json',
-
-            'X-CSRF-TOKEN':
-                document.querySelector(
-                    'meta[name="csrf-token"]'
-                ).content
+            'Accept':       'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
         },
-
-        body: JSON.stringify(data)
-
+        body: JSON.stringify(data),
     })
-
     .then(async response => {
 
         const res = await response.json();
 
-        // VALIDATION
         if (res.errors) {
-
-            const firstError =
-                Object.values(res.errors)[0][0];
-
-            showMessage(firstError, "error");
-
+            const firstError = Object.values(res.errors)[0][0];
+            showMessage(firstError, 'error');
             return;
         }
 
-        // ERROR
         if (res.status === 'error') {
-
-            showMessage(
-                res.message || "Something went wrong",
-                "error"
-            );
-
+            showMessage(res.message || 'Something went wrong', 'error');
             return;
         }
 
-        // INFO
         if (res.status === 'info') {
-
-            showMessage(res.message, "info");
-
+            showMessage(res.message, 'info');
             return;
         }
 
-        // SUCCESS
         closeLeaseModal();
-
         loadLeases();
-
-        showMessage(
-            res.message ||
-            (id ? "Lease updated!" : "Lease created!"),
-            "success"
-        );
+        showMessage(res.message || (id ? 'Lease updated!' : 'Lease created!'), 'success');
     })
-
     .catch(err => {
-
         console.error(err);
-
-        showMessage(
-            "Something went wrong",
-            "error"
-        );
+        showMessage('Something went wrong', 'error');
     });
 });
-
 
 // ================= EDIT =================
 function editLease(id) {
 
-    fetch(`/api/leases/${id}`)
-
+    fetch(`/api/leases/${id}`, {
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' },
+    })
     .then(res => res.json())
-
     .then(res => {
 
-        let l = res.data;
+        const l = res.data;
 
         openLeaseModal();
 
-        document.getElementById('editing_id').value =
-            id;
+        document.getElementById('editing_id').value    = id;
+        document.getElementById('lease_no').value      = l.lease_no;
+        document.getElementById('start_date').value    = l.start_date;
+        document.getElementById('end_date').value      = l.end_date;
+        document.getElementById('deposit').value       = l.deposit;
+        document.getElementById('deposit_paid').value  = l.deposit_paid;
+        document.getElementById('payment_method').value = l.payment_method;
+        document.getElementById('property_no').value   = l.property_no;
+        document.getElementById('renter_no').value     = l.renter_no;
+        document.getElementById('staff_no').value      = l.staff_no;
 
-        document.getElementById('lease_no').value =
-            l.lease_no;
-
-        document.getElementById('start_date').value =
-            l.start_date;
-
-        document.getElementById('end_date').value =
-            l.end_date;
-
-        document.getElementById('deposit').value =
-            l.deposit;
-
-        document.getElementById('deposit_paid').value =
-            l.deposit_paid;
-
-        document.getElementById('payment_method').value =
-            l.payment_method;
-
-        document.getElementById('property_no').value =
-            l.property_no;
-
-        document.getElementById('renter_no').value =
-            l.renter_no;
-
-        document.getElementById('staff_no').value =
-            l.staff_no;
-
-        document.getElementById('lease_no')
-            .disabled = true;
-
-        document.getElementById('modalTitle')
-            .textContent = "Edit Lease";
-
-        document.querySelector(
-            '#leaseForm button[type="submit"]'
-        ).textContent = "Update";
+        document.getElementById('lease_no').disabled = true;
+        document.getElementById('modalTitle').textContent = 'Edit Lease';
+        document.querySelector('#leaseForm button[type="submit"]').textContent = 'Update';
     });
 }
 
-
 // ================= TOAST =================
-function showMessage(message, type = "success") {
+function showMessage(message, type = 'success') {
 
-    const box = document.createElement("div");
-
+    const box = document.createElement('div');
     box.innerText = message;
 
-    box.style.position = "fixed";
-    box.style.top = "20px";
-    box.style.right = "20px";
-    box.style.padding = "14px 22px";
-    box.style.color = "#fff";
-    box.style.borderRadius = "8px";
-    box.style.zIndex = "9999";
-    box.style.fontFamily = "'Inter', sans-serif";
-    box.style.fontSize = "14px";
-    box.style.fontWeight = "600";
-    box.style.boxShadow =
-        "0 4px 12px rgba(0,0,0,0.15)";
-
-    box.style.background =
-        type === "error"
-            ? "#e74c3c"
-            : type === "info"
-            ? "#f39c12"
-            : "#27ae60";
+    box.style.cssText = `
+        position: fixed; top: 20px; right: 20px;
+        padding: 14px 22px; color: #fff;
+        border-radius: 8px; z-index: 9999;
+        font-family: 'Inter', sans-serif;
+        font-size: 14px; font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        background: ${type === 'error' ? '#e74c3c' : type === 'info' ? '#f39c12' : '#27ae60'};
+    `;
 
     document.body.appendChild(box);
 
     setTimeout(() => {
-
-        box.style.opacity = "0";
-
-        box.style.transition = "0.3s";
-
+        box.style.opacity    = '0';
+        box.style.transition = '0.3s';
         setTimeout(() => box.remove(), 300);
-
     }, 2000);
 }
 
-
 // ================= INIT =================
 loadLeases();
-loadRenters();
 loadFormData();
 
 </script>

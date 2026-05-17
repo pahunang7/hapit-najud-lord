@@ -86,6 +86,45 @@
         </main>
 
     </div>
+
+<script>
+async function loadDropdown(url, selectId, formatFn) {
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error("HTTP " + response.status);
+        }
+
+        const data = await response.json();
+
+        const select = document.getElementById(selectId);
+        if (!select) return;
+
+        // reset dropdown
+        select.innerHTML = `<option value="">Select option</option>`;
+
+        data.forEach(item => {
+            const option = document.createElement("option");
+
+            option.value = item.id ?? item.staff_no ?? item.property_no ?? item.renter_no;
+            option.textContent = formatFn(item);
+
+            select.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error("Dropdown error:", url, error);
+    }
+}
+</script>
 </body>
 
 </body>
