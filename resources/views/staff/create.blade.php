@@ -40,7 +40,7 @@
 
                 <div class="form-group">
                     <label>Telephone No.</label>
-                    <input type="text" id="telephone_no" required>
+                    <input type="tel" id="telephone_no" inputmode="numeric" pattern="[0-9]+" maxlength="20" required>
                 </div>
 
                 <div class="form-group">
@@ -127,7 +127,7 @@
                 <input type="text" id="nok_name" placeholder="Full Name" required>
                 <input type="text" id="nok_relationship" placeholder="Relationship" required>
                 <input type="text" id="nok_address" placeholder="Address" required>
-                <input type="text" id="nok_phone" placeholder="Phone" required>
+                <input type="tel" id="nok_phone" inputmode="numeric" pattern="[0-9]+" maxlength="20" placeholder="Phone" required>
             </div>
 
             <div class="form-actions">
@@ -151,6 +151,13 @@ document.getElementById('job_title').addEventListener('change', function () {
 
     document.getElementById('secretaryFields').style.display =
         this.value === 'Secretary' ? 'block' : 'none';
+});
+
+// Strip non-numeric characters from phone fields as user types
+['telephone_no', 'nok_phone'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '');
+    });
 });
 
 // Load supervisors by branch
@@ -198,7 +205,6 @@ document.getElementById('branch_no').addEventListener('change', async function (
     }
 });
 
-// CREATE STAFF (FIXED: /staff NOT /api/staff)
 document.getElementById('staffForm').addEventListener('submit', async function (e) {
 
     e.preventDefault();
@@ -208,41 +214,38 @@ document.getElementById('staffForm').addEventListener('submit', async function (
     btn.textContent = 'Creating...';
 
     const payload = {
-        first_name: document.getElementById('first_name').value,
-        last_name: document.getElementById('last_name').value,
-        address: document.getElementById('address').value,
-        telephone_no: document.getElementById('telephone_no').value,
-        sex: document.getElementById('sex').value,
-        date_of_birth: document.getElementById('date_of_birth').value,
-        date_joined: document.getElementById('date_joined').value,
-        nin: document.getElementById('nin').value,
-        job_title: document.getElementById('job_title').value,
-        salary: document.getElementById('salary').value,
-        branch_no: document.getElementById('branch_no').value,
-        supervisor_staff_no: document.getElementById('supervisor_staff_no').value || null,
-        date_start: document.getElementById('date_start')?.value || null,
-        car_allowance: document.getElementById('car_allowance')?.value || null,
-        bonus: document.getElementById('bonus')?.value || null,
-        typing_speed: document.getElementById('typing_speed')?.value || null,
-        nok_name: document.getElementById('nok_name').value,
-        nok_relationship: document.getElementById('nok_relationship').value,
-        nok_address: document.getElementById('nok_address').value,
-        nok_phone: document.getElementById('nok_phone').value,
+        first_name:           document.getElementById('first_name').value,
+        last_name:            document.getElementById('last_name').value,
+        address:              document.getElementById('address').value,
+        telephone_no:         document.getElementById('telephone_no').value,
+        sex:                  document.getElementById('sex').value,
+        date_of_birth:        document.getElementById('date_of_birth').value,
+        date_joined:          document.getElementById('date_joined').value,
+        nin:                  document.getElementById('nin').value,
+        job_title:            document.getElementById('job_title').value,
+        salary:               document.getElementById('salary').value,
+        branch_no:            document.getElementById('branch_no').value,
+        supervisor_staff_no:  document.getElementById('supervisor_staff_no').value || null,
+        date_start:           document.getElementById('date_start')?.value || null,
+        car_allowance:        document.getElementById('car_allowance')?.value || null,
+        bonus:                document.getElementById('bonus')?.value || null,
+        typing_speed:         document.getElementById('typing_speed')?.value || null,
+        nok_name:             document.getElementById('nok_name').value,
+        nok_relationship:     document.getElementById('nok_relationship').value,
+        nok_address:          document.getElementById('nok_address').value,
+        nok_phone:            document.getElementById('nok_phone').value,
     };
 
     try {
 
-        const response = await fetch('/staff', {   // ✅ FIXED HERE
-
+        const response = await fetch('/staff', {
             method: 'POST',
             credentials: 'same-origin',
-
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
             },
-
             body: JSON.stringify(payload),
         });
 
@@ -264,7 +267,6 @@ document.getElementById('staffForm').addEventListener('submit', async function (
     } catch (err) {
         console.error(err);
         showMessage('Server error occurred.', 'error');
-
         btn.disabled = false;
         btn.textContent = 'Create Staff';
     }

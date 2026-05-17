@@ -81,7 +81,7 @@ class StaffController extends Controller
             'first_name'          => 'required|string|max:50',
             'last_name'           => 'required|string|max:50',
             'address'             => 'required|string|max:150',
-            'telephone_no'        => 'required|string|max:20',
+            'telephone_no'        => 'required|digits_between:7,20',
             'sex'                 => 'required|in:Male,Female',
             'date_of_birth'       => 'required|date',
             'nin'                 => 'required|string|max:20|unique:staff',
@@ -212,7 +212,7 @@ class StaffController extends Controller
             'first_name'          => 'required|string|max:50',
             'last_name'           => 'required|string|max:50',
             'address'             => 'required|string|max:150',
-            'telephone_no'        => 'required|string|max:20',
+            'telephone_no'        => 'required|digits_between:7,20',
             'sex'                 => 'required|in:Male,Female',
             'date_of_birth'       => 'required|date',
             'nin'                 => 'required|string|max:20|unique:staff,nin,' . $id . ',staff_no',
@@ -228,7 +228,7 @@ class StaffController extends Controller
             'nok_name'            => 'nullable|string|max:100',
             'nok_relationship'    => 'nullable|string|max:50',
             'nok_address'         => 'nullable|string|max:150',
-            'nok_phone'           => 'nullable|string|max:20',
+            'nok_phone'           => 'nullable|digits_between:7,20',
         ]);
 
         if ($validated['job_title'] !== 'Manager') {

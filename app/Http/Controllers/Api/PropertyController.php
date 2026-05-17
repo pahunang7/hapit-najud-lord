@@ -209,22 +209,21 @@ class PropertyController extends Controller
 
   public function webIndex()
 {
-    $properties = DB::table('property_for_rent')
-        ->orderBy('property_no')
-        ->get();
+    $user = auth()->user(); // assumes User model has staff_no
 
-    $owners = DB::table('owner')
-        ->orderBy('owner_no')
-        ->get();
+    $query = DB::table('property_for_rent')->orderBy('property_no');
 
-    $branches = DB::table('branch_office')
-        ->orderBy('branch_no')
-        ->get();
+    // If the user is staff (not admin), only show their assigned properties
+    if ($user->role === 'staff') {
+        $query->where('staff_no', $user->staff_no);
+    }
 
-    return view(
-        'properties.index',
-        compact('properties', 'owners', 'branches')
-    );
+    $properties = $query->get();
+
+    $owners   = DB::table('owner')->orderBy('owner_no')->get();
+    $branches = DB::table('branch_office')->orderBy('branch_no')->get();
+
+    return view('properties.index', compact('properties', 'owners', 'branches'));
 }
 
 public function store(Request $request)

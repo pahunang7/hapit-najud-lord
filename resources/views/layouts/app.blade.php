@@ -1,131 +1,127 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-<head>
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/property-search.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 
-<meta name="csrf-token" content="{{ csrf_token() }}">
-
-<link rel="stylesheet" href="{{ asset('css/style.css') }}">
-
-<link rel="stylesheet" href="{{ asset('css/property-search.css') }}">
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-
-@yield('styles')
-
-<title>DreamHome</title>
-
-</head>
- 
-
+    @yield('styles')
     <title>DreamHome</title>
-
 </head>
 <body>
     <div class="layout">
-        
+
         <!-- SIDEBAR -->
         <aside class="sidebar">
-    <h2><i class="fa-solid fa-house"></i> DreamHome</h2>
+            <h2><i class="fa-solid fa-house"></i> DreamHome</h2>
 
-    <a href="/" class="{{ request()->is('/') ? 'active' : '' }}">
-    <i class="fa-solid fa-table-columns"></i> Dashboard
-</a>
-
-<a href="/owners" class="{{ request()->is('owner*') ? 'active' : '' }}">
+            <a href="/" class="{{ request()->is('/') ? 'active' : '' }}">
+                <i class="fa-solid fa-table-columns"></i> Dashboard
+            </a>
+            <a href="/owners" class="{{ request()->is('owner*') ? 'active' : '' }}">
                 <i class="fa-solid fa-user"></i> Owners
             </a>
+            <a href="/branches" class="{{ request()->is('branches*') ? 'active' : '' }}">
+                <i class="fa-solid fa-code-branch"></i> Branches
+            </a>
+            <a href="/staff" class="{{ request()->is('staff*') ? 'active' : '' }}">
+                <i class="fa-solid fa-users"></i> Staff
+            </a>
+            <a href="/properties" class="{{ request()->is('properties*') ? 'active' : '' }}">
+                <i class="fa-solid fa-building"></i> Properties
+            </a>
+            <a href="/viewings" class="{{ request()->is('viewings*') ? 'active' : '' }}">
+                <i class="fa-solid fa-calendar-check"></i> Viewings
+            </a>
+            <a href="/leases" class="{{ request()->is('leases*') ? 'active' : '' }}">
+                <i class="fa-solid fa-file-contract"></i> Lease Agreements
+            </a>
+            <a href="/renter" class="{{ request()->is('renter') ? 'active' : '' }}">
+                <i class="fa-solid fa-users"></i> Client List
+            </a>
+            <a href="/renter/create" class="{{ request()->is('renter/create') ? 'active' : '' }}">
+                <i class="fa-solid fa-user-plus"></i> Renter Registration
+            </a>
+            <a href="/renter/search" class="{{ request()->is('renter/search') ? 'active' : '' }}">
+                <i class="fa-solid fa-magnifying-glass"></i> Search Properties
+            </a>
 
-<a href="/branches" class="{{ request()->is('branches*') ? 'active' : '' }}">
-    <i class="fa-solid fa-code-branch"></i> Branches
-</a>
-
-<a href="/staff" class="{{ request()->is('staff*') ? 'active' : '' }}">
-    <i class="fa-solid fa-users"></i> Staff
-</a>
-            
-<a href="/properties" class="{{ request()->is('properties*') ? 'active' : '' }}">
-    <i class="fa-solid fa-building"></i> Properties
-</a>
-
-<a href="/viewings" class="{{ request()->is('viewings*') ? 'active' : '' }}">
-    <i class="fa-solid fa-calendar-check"></i> Viewings
-</a>
-
-<a href="/leases" class="{{ request()->is('leases*') ? 'active' : '' }}">
-    <i class="fa-solid fa-file-contract"></i> Lease Agreements
-</a>
-
-<a href="/renter" class="{{ request()->is('renter') ? 'active' : '' }}">
-    <i class="fa-solid fa-user-plus"></i> Client List
-</a>
-
-<a href="/renter/create" class="{{ request()->is('renter/create') ? 'active' : '' }}">
-    <i class="fa-solid fa-user-plus"></i> Renter Registration
-</a>
-
-<a href="/renter/search" class="{{ request()->is('renter/search') ? 'active' : '' }}">
-    <i class="fa-solid fa-magnifying-glass"></i> Search Properties
-</a>
-
-<form method="POST" action="{{ route('logout') }}">
-    @csrf
-    <button type="submit" class="logout-btn">
-        <i class="fa-solid fa-right-from-bracket"></i> Logout
-    </button>
-</form>
-
-</aside>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="logout-btn">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </form>
+        </aside>
 
         <!-- MAIN CONTENT -->
         <main class="main-content">
+
+            <!-- TOP NAVBAR -->
+            @auth
+            <header class="topbar">
+                <div class="topbar-left">
+                    <span class="topbar-page-hint">
+                        <i class="fa-solid fa-circle" style="font-size:6px; color: var(--brand-blue); vertical-align: middle;"></i>
+                        DreamHome Staff Portal
+                    </span>
+                </div>
+                <div class="topbar-right">
+                    <div class="topbar-user">
+                        <div class="topbar-avatar">
+                            {{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}{{ strtoupper(substr(auth()->user()->last_name, 0, 1)) }}
+                        </div>
+                        <div class="topbar-info">
+                            <span class="topbar-name">
+                                {{ auth()->user()->first_name }} {{ auth()->user()->last_name }}
+                            </span>
+                            <span class="topbar-role topbar-role--{{ strtolower(auth()->user()->job_title) }}">
+                                {{ auth()->user()->job_title }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            @endauth
+
             @yield('content')
         </main>
 
     </div>
 
-<script>
-async function loadDropdown(url, selectId, formatFn) {
-    try {
-        const response = await fetch(url, {
-            method: 'GET',
-            credentials: 'same-origin',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
+    <script>
+    async function loadDropdown(url, selectId, formatFn) {
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
 
-        if (!response.ok) {
-            throw new Error("HTTP " + response.status);
+            if (!response.ok) throw new Error("HTTP " + response.status);
+
+            const data = await response.json();
+            const select = document.getElementById(selectId);
+            if (!select) return;
+
+            select.innerHTML = `<option value="">Select option</option>`;
+            data.forEach(item => {
+                const option = document.createElement("option");
+                option.value = item.id ?? item.staff_no ?? item.property_no ?? item.renter_no;
+                option.textContent = formatFn(item);
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error("Dropdown error:", url, error);
         }
-
-        const data = await response.json();
-
-        const select = document.getElementById(selectId);
-        if (!select) return;
-
-        // reset dropdown
-        select.innerHTML = `<option value="">Select option</option>`;
-
-        data.forEach(item => {
-            const option = document.createElement("option");
-
-            option.value = item.id ?? item.staff_no ?? item.property_no ?? item.renter_no;
-            option.textContent = formatFn(item);
-
-            select.appendChild(option);
-        });
-
-    } catch (error) {
-        console.error("Dropdown error:", url, error);
     }
-}
-</script>
-</body>
-
+    </script>
 </body>
 </html>
